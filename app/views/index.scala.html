@@ -1,7 +1,37 @@
-@(message: String)
+@import com.iheart.models._
+@import com.iheart.util.VclUtils._
 
-@main("Welcome to Play") {
-
-    @play20.welcome(message)
-
+Single Val <br/>
+@for(c <- VclConfigCondition.singleValConditions ) {
+  <br/>  @c._2.label
+    <select name="condition[@c._1]">
+      @for(dropdown <- c._2.vclMatchers) {
+       <option value="@vclMatcherReverseMap(dropdown)">@vclMatcherMap(vclMatcherReverseMap(dropdown))._2</option>
+      }
+    </select>
+    <input type="text" name="value"/>
 }
+
+<br/><Br/>
+Name Val <br/>
+@for(c <- VclConfigCondition.nameValueConditions ) {
+<br/>  @c._2.label
+<input type="text" name="name"/>
+<select>
+    @for(dropdown <- c._2.vclMatchers) {
+    <option value="@vclMatcherReverseMap(dropdown)">@vclMatcherMap(vclMatcherReverseMap(dropdown))._2</option>
+    }
+</select>
+<input type="text" name="value"/>
+}
+
+<Br/><br/>
+
+Actions<br/><br/>
+<select>
+@for(a <- VclConfigAction.actionMap) {
+
+  <option value="@a._1">@a._2.label</option>
+}
+
+</select>
