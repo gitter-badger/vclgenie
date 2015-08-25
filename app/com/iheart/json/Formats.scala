@@ -20,13 +20,15 @@ object Formats {
   implicit val ruleActionFormat: Reads[Either[RuleError,RuleAction]] = (
     ( JsPath \ "action").read[String] and
       (JsPath \ "name").readNullable[String] and
-      (JsPath \ "value").readNullable[String]
+      (JsPath \ "value").readNullable[String] and
+      (JsPath \ "units").readNullable[String]
     )(RuleAction.build _)
 
   implicit val ruleFormat = (
     (JsPath \ "conditions").read[Seq[Either[RuleError,RuleCondition]]] and
       (JsPath \ "actions").read[Seq[Either[RuleError,RuleAction]]] and
-      (JsPath \ "match_type").read[String]
+      (JsPath \ "match_type").read[String] and
+      (JsPath \ "index").readNullable[Int]
     )(Rule.build _ )
 
   class ReadsWithRequiredArgs[A](delegate: Reads[A]) extends Reads[A] {

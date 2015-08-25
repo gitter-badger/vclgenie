@@ -2,6 +2,7 @@ package com.iheart.controllers
 
 import com.iheart.json.Formats._
 import com.iheart.models.Rule
+import play.Logger
 import play.api.libs.json.{JsSuccess, Json, JsError}
 import play.api.mvc.Results._
 import scala.concurrent.Future

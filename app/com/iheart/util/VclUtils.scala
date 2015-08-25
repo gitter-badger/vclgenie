@@ -5,9 +5,14 @@ import com.iheart.models.VclConfigAction._
 
 object VclUtils {
 
+  object VclUnits extends Enumeration {
+    type VclUnits = Value
+    val SECONDS, MINUTES, HOURS, DAYS, WEEKS, YEARS = Value
+  }
+
   object VclFunctionType extends Enumeration {
     type VclFunctionType = Value
-    val vclFetch, vclRecv, vclDeliver = Value
+    val vclFetch, vclRecv, vclDeliver, vclError, vclHit, vclMiss = Value
   }
 
   object VclActionType extends Enumeration {
@@ -26,8 +31,14 @@ object VclUtils {
   }
 
   object VclMatchType extends Enumeration {
+
     type VclMatchType = Value
     val ANY, ALL = Value
+
+    def fromString(s: String) = s match {
+      case "ALL" => ALL
+      case "ANY" => ANY
+    }
   }
 
   import com.iheart.util.VclUtils.VclMatchers._
@@ -48,6 +59,15 @@ object VclUtils {
      DoesNotMatch -> "does_not_match",
      Equals -> "equals",
      DoesNotEqual -> "does_not_equal"
+  )
+
+  val vclUnitMap = Map(
+    "seconds" -> VclUnits.SECONDS,
+    "minutes" -> VclUnits.MINUTES,
+    "hours" -> VclUnits.HOURS,
+    "days" -> VclUnits.DAYS,
+    "weeks" -> VclUnits.WEEKS,
+    "years" -> VclUnits.YEARS
   )
 
 }

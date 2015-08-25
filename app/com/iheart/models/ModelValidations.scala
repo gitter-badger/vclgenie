@@ -60,4 +60,6 @@ trait ModelValidations {
 
   def validateBoolAction(actions: Seq[RuleAction]) =
     (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (a.value.get.toInt != 0 && a.value.get.toInt != 1))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
+
+  def validUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
 }

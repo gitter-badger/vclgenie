@@ -1,5 +1,6 @@
 package com.iheart.controllers
 
+import com.iheart.vcl.VclGenerator
 import play.api._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import play.api.mvc._
@@ -20,9 +21,11 @@ class VclController extends Controller with BaseController {
    val req = request.body.validate[Seq[Either[RuleError,Rule]]]
 
     req match {
-      case s: JsSuccess[Seq[Either[RuleError,Rule]]] => s.isValid match {
-        case true =>  "worked".successF
-        case false =>  s.errorJF
+      case success: JsSuccess[Seq[Either[RuleError,Rule]]] => success.isValid match {
+        case true =>
+          val rules: Seq[Rule] = success.map(s => s.filter(res => res.isRight).map(res => res.right.get)).get
+          VclGenerator.generateRuleset(rules).successF  //"worked".successF
+        case false =>  success.errorJF
       }
       case e: JsError =>  Logger.info("ERROR:" + e.errorJF.toString); e.errorJF
     }

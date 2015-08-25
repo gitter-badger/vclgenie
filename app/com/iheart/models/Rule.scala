@@ -3,15 +3,25 @@ package com.iheart.models
 import com.iheart.json.Formats._
 import com.iheart.models.VclConfigCondition._
 import com.iheart.models.VclConfigAction._
+import com.iheart.util.VclUtils.VclFunctionType.VclFunctionType
+import com.iheart.util.VclUtils.VclMatchType
+import com.iheart.util.VclUtils.VclMatchType
+import com.iheart.util.VclUtils.VclMatchType.VclMatchType
 import play.Logger
 
-case class Rule(conditions: Seq[RuleCondition], actions: Seq[RuleAction], matchType: String) {
+case class Rule(conditions: Seq[RuleCondition],
+                actions: Seq[RuleAction],
+                matchType: VclMatchType,
+                index: Option[Int] ,
+                id: String = java.util.UUID.randomUUID.toString) {
 
-  def needsAcl = ??? //conditions.count(c => c. == "needsACL") > 0
+  def needsAcl = false //conditions.count(c => c. == "needsACL") > 0
 
   def toConfigAction(str: String) = actionMap(str)
   
   def toConfigCondition(str: String) = conditionMap(str)
+
+  def actionHasVclFunction(func: VclFunctionType): Boolean = actions.count(a => a.action.vclFunctions.contains(func)) > 0
 
 }
 
@@ -21,7 +31,10 @@ object Rule extends ModelValidations {
 
   def getErrors[S <: RuleError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
 
-  def build(conditions: Seq[Either[RuleError,RuleCondition]], actions: Seq[Either[RuleError, RuleAction]], matchType: String): Either[RuleError,Rule] = {
+  def build(conditions: Seq[Either[RuleError,RuleCondition]],
+            actions: Seq[Either[RuleError, RuleAction]],
+            matchType: String,
+            index: Option[Int]): Either[RuleError,Rule] = {
     if (hasError(conditions) || hasError(actions))
       Left(RuleError(getErrors(conditions) ++ getErrors(actions)))
     else {
@@ -31,7 +44,7 @@ object Rule extends ModelValidations {
                   validateNameAction(actions.map(_.right.get)),
                   validateBoolAction(actions.map(_.right.get)) )) match {
         case Left(x) => Logger.info("error with rule: " + x.toString()); Left(RuleError(x))
-        case Right(y) => Right (Rule(conditions.map (_.right.get), actions.map (_.right.get), matchType) )
+        case Right(y) => Right (Rule(conditions.map (_.right.get), actions.map (_.right.get), VclMatchType.fromString(matchType), index) )
       }
     }
 
