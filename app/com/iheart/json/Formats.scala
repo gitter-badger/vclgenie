@@ -31,6 +31,29 @@ object Formats {
       (JsPath \ "index").readNullable[Int]
     )(Rule.build _ )
 
+
+  implicit val hostnameFormat: Reads[Either[HostnameError,Hostname]] =
+    ( JsPath \ "hostname").read[String].map(h => (Hostname.build(h)))
+
+  //VclRequest
+  case class VclRequest(hostnames: Seq[Either[HostnameError,Hostname]], rules: Seq[Either[RuleError,Rule]])
+
+  implicit val vclRequestReads = (
+    ( JsPath \ "hostnames").read[Seq[Either[HostnameError,Hostname]]] and
+    ( JsPath \ "rules").read[Seq[Either[RuleError,Rule]]]
+    )(VclRequest)
+
+
+  trait BaseError {
+    def errors: Seq[String]
+  }
+
+  case class RuleError(errors: Seq[String]) extends BaseError
+  case class HostnameError(errors: Seq[String]) extends BaseError
+
+  implicit val errorWrites: Writes[RuleError] = Json.writes[RuleError]
+  implicit val hostnameErrorWrites = Json.writes[HostnameError]
+
   class ReadsWithRequiredArgs[A](delegate: Reads[A]) extends Reads[A] {
     def reads(json: JsValue) = {
       try delegate.reads(json) catch {
@@ -38,9 +61,5 @@ object Formats {
       }
     }
   }
-
-  case class RuleError(errors: Seq[String])
-
-  implicit val errorWrites: Writes[RuleError] = Json.writes[RuleError]
 }
 

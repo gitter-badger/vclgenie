@@ -18,16 +18,19 @@ class VclController extends Controller with BaseController {
   }
 
   def generate = Action.async(parse.json) { request =>
-   val req = request.body.validate[Seq[Either[RuleError,Rule]]]
+  /// val req = request.body.validate[Seq[Either[RuleError,Rule]]]
+    val req = request.body.validate[VclRequest]
 
     req match {
-      case success: JsSuccess[Seq[Either[RuleError,Rule]]] => success.isValid match {
+      case success: JsSuccess[VclRequest] => success.isValid match {
         case true =>
-          val rules: Seq[Rule] = success.map(s => s.filter(res => res.isRight).map(res => res.right.get)).get
-          VclGenerator.generateRuleset(rules).successF  //"worked".successF
+          val rules: Seq[Rule] = success.toRules
+          val hostnames: Seq[Hostname] = success.toHostnames
+          val v = new VclGenerator
+          v.generateRuleset(hostnames,rules).successF
         case false =>  success.errorJF
       }
-      case e: JsError =>  Logger.info("ERROR:" + e.errorJF.toString); e.errorJF
+      case e: JsError =>  e.errorJF
     }
 
   }

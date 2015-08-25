@@ -50,6 +50,27 @@ trait VCLHelpers {
     case VclFunctionType.vclError => vclErrorStr += str
   }
 
+  def generateAcl(rules: Seq[Rule]) = {
+
+    val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
+
+    rules.filter(_.needsAcl).map { rule =>
+
+      globalConfig += "acl rule_" + rule.id + "{ \n"
+      val aclRules = rule.conditions.filter(f => f.condition.getOrElse(None) == VclConfigCondition.clientIp )
+
+      aclRules.map { aclrule =>
+        val net = aclrule.value match {
+          case x if x.contains("/") => x
+          case x => x + "/32"
+        }
+        val pattern(ip,mask) = net
+        globalConfig += addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
+      }
+      globalConfig += "}\n\n"
+    }
+  }
+
   //***************************************************************************
   // BACKEND/DIRECTOR FUNCTIONS
   //***************************************************************************
@@ -104,7 +125,7 @@ trait VCLHelpers {
   def vclAction(ruleaction: RuleAction, vclFunction: VclFunctionType) = ruleaction.action match  {
     case VclConfigAction.doNotCache => "set beresp.ttl = 0s; "
     case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";\n"
-    case VclConfigAction.httpRedirect=> "error 799 " + ruleaction.value + " ;"
+    case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;\n"
     case VclConfigAction.denyRequest => "error 403;"
     case VclConfigAction.removeReqHeader => "unset req.http." + ruleaction.value + ";"
     case VclConfigAction.removeRespHeader => "unset resp.http." + ruleaction.value + ";"
@@ -154,35 +175,43 @@ trait VCLHelpers {
 
 
 
-  //****************************************************
-  // HOSTNAME FUNCTIONS
-  //****************************************************
+ // ****************************************************
+ //  HOSTNAME FUNCTIONS
+ // ****************************************************
 
-//  def generateHostCondition(hostname: Hostname, vclFunction: VclFunctionType, idx: Int) = {
-//    val ruleIf = if (idx > 0)
-//      "else if ( "
-//    else  "if ( "
-//
-//    var block = "\n "
-//
-//    block += s"""${ruleIf} req.http.Host == "${hostname.name}" ) { \n """
-//    if (vclFunction == "vcl_recv")
-//      block += s""" set req.backend = director_${hostname._id.stringify} ; \n """
-//    block += addTabs(1) + "call ruleset_" + hostname.ruleset.get._id.stringify + "_global_" + vclFunction + ";\n"
-//    block += addTabs(1) + "call ruleset_" + hostname.ruleset.get._id.stringify + "_ordered_" + vclFunction + ";\n"
-//    block += " }\n"
-//    addToVcl(block,vclFunction)
-//  }
-//
-//  def generateHostConditions(hostnames: List[Hostname]) = {
-//    val funcs = List(vclFetch, vclRecv, vclDeliver)
-//
-//    funcs.foreach { vclfunc =>
-//      hostnames.zipWithIndex.foreach { case (hostname,idx) =>
-//        generateHostCondition(hostname,vclfunc,idx)
-//      }
-//    }
-//  }
+  def generateHostCondition(hostname: Hostname, vclFunction: VclFunctionType, idx: Int) = {
+
+    val ruleIf = if (idx > 0)
+      "else if ( "
+    else  "if ( "
+
+    var block = "\n "
+
+    block += s"""${ruleIf} req.http.Host == "${hostname.name}" ) { \n """
+    if (vclFunction == VclFunctionType.vclRecv)
+      block += s"""set req.backend = director_${hostname.id} ; \n """
+    block += addTabs(1) + "call ruleset_" + hostname.id + "_global_" + vclFunction + ";\n"
+    block += addTabs(1) + "call ruleset_" + hostname.id + "_ordered_" + vclFunction + ";\n"
+    block += " }\n"
+    addToVcl(block,vclFunction)
+  }
+
+  def generateHostConditions(hostnames: Seq[Hostname], ruleset: String) = {
+    Logger.info("Generating configs for hostnames")
+    val funcs = List(vclFetch, vclRecv, vclDeliver)
+
+
+    funcs.foreach { vclfunc =>
+      var block = "\n"
+      block += "if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
+      if (vclfunc == VclFunctionType.vclRecv)
+        block += addTabs(1) + s""" set req.backend = director_${ruleset} ; \n """
+      block += addTabs(1) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
+      block += addTabs(1) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
+      block += " }\n"
+      addToVcl(block,vclfunc)
+    }
+  }
 
   //***************************************************
   //  GENERIC FUNCTIONS
@@ -210,8 +239,6 @@ trait VCLHelpers {
   val baseVcl = """
 
                   |  import std;
-                  |  import ssutil;
-                  |  import geoip;
                   |  import header;
                   |  import digest;
                   |
@@ -338,13 +365,11 @@ trait VCLHelpers {
       |sub vcl_deliver {
       |
       |  if (obj.hits > 0) {
-      |     set resp.http.X-SS-Cache = "HIT";
+      |     set resp.http.X-Cache = "HIT";
       |     } else {
-      |     set resp.http.X-SS-Cache = "MISS";
+      |     set resp.http.X-Cache = "MISS";
       |  }
       |
-      |  set resp.http.X-SS-Expiration2 = req.http.X-SS-Expiration2;
-      |  set resp.http.X-SS-Token2 = req.http.X-SS-Token2;
     """.stripMargin
 
   vclFetchStr =
@@ -353,9 +378,6 @@ trait VCLHelpers {
       |# VCL_FETCH
       |#------------------------
       |sub vcl_fetch {
-      |
-      |  set beresp.http.X-SS-PURGEURL = req.url;
-      |  set beresp.http.X-SS-PURGEHOST = req.http.host ;
     """.stripMargin
 
   vclRecvStr =
@@ -374,8 +396,6 @@ trait VCLHelpers {
       |    call set_geoip;
       |   }
       |
-      |   set req.http.X-SS-ClientIP = client.ip ;
-      |   set req.http.X-SS-RequestStart = ssutil.time_str();
       |   set req.http.ext = regsub( req.url, "\\?.+$", "" );
       |   set req.http.ext = regsub( req.http.ext, ".+\\.([a-zA-Z0-9]+)$", "\\1" );
       |

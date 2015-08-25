@@ -1,33 +1,13 @@
 package com.iheart.vcl
 
-import com.iheart.models.{VclConfigCondition, Rule}
+import com.iheart.models.{Hostname, VclConfigCondition, Rule}
 import com.iheart.util.VclUtils.VclFunctionType._
 import com.iheart.util.VclUtils.VclMatchType
+import play.Logger
 
 
-object VclGenerator extends VCLHelpers {
+class VclGenerator extends VCLHelpers {
 
-
-  def generateAcl(rules: Seq[Rule]) = {
-
-    val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
-
-    rules.filter(_.needsAcl).map { rule =>
-
-      globalConfig += "acl rule_" + rule.id + "{ \n"
-      val aclRules = rule.conditions.filter(f => f.condition.getOrElse(None) == VclConfigCondition.clientIp )
-
-      aclRules.map { aclrule =>
-        val net = aclrule.value match {
-          case x if x.contains("/") => x
-          case x => x + "/32"
-        }
-        val pattern(ip,mask) = net
-        globalConfig += addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
-      }
-      globalConfig += "}\n\n"
-    }
-  }
 
   def parseGlobalRule(rule: Rule, vclFunction: VclFunctionType) = {
     val actions = rule.actions.map { action =>
@@ -100,8 +80,9 @@ object VclGenerator extends VCLHelpers {
     }
   }
 
-  def generateRuleset(rules: Seq[Rule], ruleset: String = java.util.UUID.randomUUID.toString): String = {
+  def generateRuleset(hostnames: Seq[Hostname], rules: Seq[Rule], ruleset: String = java.util.UUID.randomUUID.toString): String = {
     generateAcl(rules)
+    generateHostConditions(hostnames,ruleset)
     parseGlobalRules(ruleset,rules)
     parseOrderedRules(ruleset,rules)
     closeConfigs

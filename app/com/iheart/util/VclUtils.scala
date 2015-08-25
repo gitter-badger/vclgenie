@@ -12,7 +12,13 @@ object VclUtils {
 
   object VclFunctionType extends Enumeration {
     type VclFunctionType = Value
-    val vclFetch, vclRecv, vclDeliver, vclError, vclHit, vclMiss = Value
+    val vclFetch = Value("vcl_fetch")
+    val vclRecv = Value("vcl_recv")
+    val vclDeliver = Value("vcl_deliver")
+    val vclError = Value("vcl_error")
+    val vclHit = Value("vcl_hit")
+    val vclMiss = Value("vcl_miss")
+
   }
 
   object VclActionType extends Enumeration {
