@@ -17,15 +17,14 @@ class VclControllerSpec extends Specification with JsonData {
       val Some(result) = route(FakeRequest(POST, "/vcl").withJsonBody(ruleJson))
       status(result) must equalTo(OK)
       val bodyText: String = contentAsString(result)
-      Logger.info(bodyText)
-      bodyText must be equalTo "worked"
+      bodyText must contain("Global Rules")
     }
 
     "return 200 with a valid VCL 2" in new WithApplication {
       val Some(result) = route(FakeRequest(POST, "/vcl").withJsonBody(ruleJson2))
       status(result) must equalTo(OK)
       val bodyText: String = contentAsString(result)
-      bodyText must be equalTo "worked"
+      bodyText must contain("Global Rules")
     }
 
     "not accept an invalid matchType" in new WithApplication {

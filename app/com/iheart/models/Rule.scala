@@ -39,7 +39,7 @@ object Rule extends ModelValidations {
     }
 
     else {
-      isValid(Seq(validMatchType(matchType),
+      isValid(Seq(validateMatchType(matchType),
                   validateSingleAction(actions.map(_.right.get)),
                   validateNameValAction(actions.map(_.right.get)),
                   validateNameValCondition(conditions.map(_.right.get)),

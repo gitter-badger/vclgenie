@@ -11,7 +11,7 @@ case class RuleCondition(condition: VclCondition, matcher: Option[VclMatchers], 
 
 object RuleCondition extends ModelValidations {
   def apply(key: String, matcher: String, value: String, name: Option[String]): Either[RuleError,RuleCondition] = {
-    isValid(Seq(validCondition(key),validMatcher(matcher),validAcl(key,value), validMatcherForCondition(key,matcher))) match {
+    isValid(Seq(validCondition(key),validMatcher(matcher),validAcl(key,value))) match {
       case Left(x) => Logger.info("Error: " + x); Left(RuleError(x))
       case Right(y) =>  Right(RuleCondition(conditionMap(key), vclMatcherMap.get(matcher).map(_._1), value, name))
     }

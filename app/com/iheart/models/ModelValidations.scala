@@ -47,6 +47,13 @@ trait ModelValidations {
     }
   }
 
+  implicit class validationOfString(s: String) {
+    def asInt: Option[Int] = try {
+                Some(s.toInt)
+              } catch {
+                case e: NumberFormatException => None }
+  }
+
   def validCondition(key: String): Validation =
     conditionMap.get(key).isDefined.toValidate("Invalid condition key " + key)
 
@@ -80,8 +87,7 @@ trait ModelValidations {
     }
   }
 
-
-  def validAction(key: String): Validation =
+  def validateAction(key: String): Validation =
     actionMap.get(key).isDefined.toValidate("Invalid action key of " + key)
 
   //Ensure there is only 1 action declared as SingleVal
@@ -89,7 +95,7 @@ trait ModelValidations {
     (actions.count(a => a.action.actionType == SingleAction) < 2).toValidate("Only a single action of type SingleAction is permitted")
 
   //validate the matchType
-  def validMatchType(m: String): Validation =
+  def validateMatchType(m: String): Validation =
     (m == "ANY" || m == "ALL").toValidate("Invalid matcher type of " + m)
 
   def validateNameValAction(actions: Seq[RuleAction]) =
@@ -99,9 +105,9 @@ trait ModelValidations {
     (actions.count(a => a.action.actionType == NameAction && a.name.isEmpty) == 0).toValidate("actions of type NameAction must have a name")
 
   def validateBoolAction(actions: Seq[RuleAction]) =
-    (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (a.value.get.toInt != 0 && a.value.get.toInt != 1))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
+    (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (!a.value.getOrElse("").asInt.contains(0) && !a.value.getOrElse("").asInt.contains(1)))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
 
-  def validUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
+  def validateUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
 
   def hasIndex(rules: Seq[Either[RuleError,Rule]]) = {
     val valid = rules.count(r => r.isRight)
