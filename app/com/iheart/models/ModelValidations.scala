@@ -4,6 +4,7 @@ import com.iheart.models.VclConfigCondition._
 import com.iheart.models.VclConfigAction._
 import com.iheart.util.VclUtils._
 import com.iheart.util.VclUtils.VclActionType._
+import com.iheart.util.VclUtils.VclConditionType._
 import play.Logger
 
 
@@ -11,6 +12,8 @@ trait ModelValidations {
 
   type ValidationError = String
   type Validation = Either[ValidationError,Boolean]
+
+  def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
 
   def isValid(validations: Seq[Validation]): Either[Seq[ValidationError],Boolean]  = {
 
@@ -35,6 +38,9 @@ trait ModelValidations {
 
   def validCondition(key: String): Validation =
     conditionMap.get(key).isDefined.toValidate("Invalid condition key " + key)
+
+  def validateNameValCondition(conditions: Seq[RuleCondition]): Validation =
+    (conditions.count(c => c.condition.conditionType == NameValCond && (c.name.isEmpty || c.value.isEmpty)) == 0).toValidate("NameVal conditions must have name and value")
 
 
   def validMatcher(key: String): Validation =
@@ -62,4 +68,6 @@ trait ModelValidations {
     (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (a.value.get.toInt != 0 && a.value.get.toInt != 1))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
 
   def validUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
+
+  def hasIndex(rules: Seq[Either[RuleError,Rule]]) = (rules.count(r => r.isRight && r.right.get.index.isDefined) == rules.size).toValidate("All ordered rules must have an index field")
 }

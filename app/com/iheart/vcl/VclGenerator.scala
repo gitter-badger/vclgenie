@@ -80,13 +80,13 @@ class VclGenerator extends VCLHelpers {
     }
   }
 
-  def generateRuleset(hostnames: Seq[Hostname], rules: Seq[Rule], ruleset: String = java.util.UUID.randomUUID.toString): String = {
-    generateAcl(rules)
+  def generateRuleset(hostnames: Seq[Hostname], orderedRules: Seq[Rule], globalRules: Seq[Rule], ruleset: String = java.util.UUID.randomUUID.toString): String = {
+    generateAcl(orderedRules ++ globalRules)
     generateHostConditions(hostnames,ruleset)
     addComment(1,"Global Rules")
-    parseGlobalRules(ruleset,rules)
+    parseGlobalRules(ruleset,globalRules)
     addComment(1,"Ordered Rules")
-    parseOrderedRules(ruleset,rules)
+    parseOrderedRules(ruleset,orderedRules)
     closeConfigs
     globalConfig
   }

@@ -57,7 +57,7 @@ trait VCLHelpers {
     rules.filter(_.needsAcl).map { rule =>
 
       globalConfig += "acl rule_" + rule.id + "{ \n"
-      val aclRules = rule.conditions.filter(f => f.condition.getOrElse(None) == VclConfigCondition.clientIp )
+      val aclRules = rule.conditions.filter(f => f.condition == VclConfigCondition.clientIp )
 
       aclRules.map { aclrule =>
         val net = aclrule.value match {
@@ -156,7 +156,7 @@ trait VCLHelpers {
     }
   }
 
-  def vclCondition(rule: Rule, rulecondition: RuleCondition) = rulecondition.condition.get match {
+  def vclCondition(rule: Rule, rulecondition: RuleCondition) = rulecondition.condition match {
     case VclConfigCondition.requestUrl =>
       val urls = rulecondition.value.split(",").map(u => u.trim).mkString("|")
       " ( " + opToText("req.url",rulecondition.matcher.get,urls) + " ) "
@@ -168,7 +168,8 @@ trait VCLHelpers {
     case VclConfigCondition.clientCookie =>
       val str = s"""header.get(req.http.cookie,"${rulecondition.name.get} = ${rulecondition.value}")"""
       " ( " + opToText(str,rulecondition.matcher.get,"^$") + " ) "
-    case VclConfigCondition.requestHeader => " ( " + opToText("req.http." + rulecondition.name.get, rulecondition.matcher.get, rulecondition.value) + " ) "
+    case VclConfigCondition.requestHeader =>
+      " ( " + opToText("req.http." + rulecondition.name.get, rulecondition.matcher.get, rulecondition.value) + " ) "
     //case "country" => " ( " + opToText("req.http.X-GeoIP", rulecondition.matcher, rulecondition.value) + " ) "
   }
 

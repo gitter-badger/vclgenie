@@ -1,7 +1,7 @@
 package com.iheart.controllers
 
 import com.iheart.json.Formats._
-import com.iheart.models.Rule
+import com.iheart.models._
 import play.Logger
 import play.api.libs.json.{JsSuccess, Json, JsError}
 import play.api.mvc.Results._
@@ -10,6 +10,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 trait BaseController {
+
+  def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
 
   implicit class errorJClass(jserror: JsError) {
 
@@ -46,21 +48,54 @@ trait BaseController {
     }
   }
 
-  implicit class validVclRequestClass(req: JsSuccess[VclRequest]) {
+  implicit class validVclRequestClass(req: JsSuccess[Either[RequestError,VclRequest]]) {
+
+    def request: VclRequest = req.get.right.get
+
     def isValid: Boolean =
-      req.get.rules.count(s => s.isLeft) == 0 && req.get.hostnames.count(h => h.isLeft) == 0
+      req.get.isRight match {
+        case false => false
+        case true =>
+            request.orderedRules.count(s => s.isLeft) == 0 &&
+            request.hostnames.count(h => h.isLeft) == 0 &&
+            request.globalRules.count(s => s.isLeft) == 0
+      }
 
-    def toRules = req.get.rules.filter(res => res.isRight).map(res => res.right.get)
+    def ruleErrors: Seq[RuleError] = req.get.isRight match {
+      case true => Seq(RuleError(getErrors(request.orderedRules)), RuleError(getErrors(request.globalRules)))
+      case false => Seq()
+    }
 
-    def toHostnames = req.get.hostnames.filter(res => res.isRight).map(res => res.right.get)
+    def hostnameErrors: Seq[HostnameError] = req.get.isRight match {
+      case true => request.hostnames.filter(h => h.isLeft).map(r => r.left.get)
+      case false => Seq()
+    }
+
+    def toOrderedRules: Seq[Rule] =
+      req.get.isRight match {
+        case false => Seq()
+        case true => request.orderedRules.filter(res => res.isRight).map(res => res.right.get)
+      }
+     // req.get.orderedRules.filter(res => res.isRight).map(res => res.right.get)
+
+    def toGlobalRules =
+      req.get.isRight match {
+        case false => Seq()
+        case true => request.globalRules.filter(res => res.isRight).map(res => res.right.get)
+      }
+
+    def toHostnames =
+      req.get.isRight match {
+        case false => Seq()
+        case true => request.hostnames.filter(res => res.isRight).map(res => res.right.get)
+      }
+
 
     def errorToString[T <: BaseError](c: Seq[T]): Seq[String] = c.flatMap(e => e.errors)
 
     def errorJF = Future {
-      val ruleErrors = req.get.rules.filter(s => s.isLeft).map(r => r.left.get)
-      val hostnameErrors = req.get.hostnames.filter(h => h.isLeft).map(r => r.left.get)
       val errors: Seq[String] = errorToString(ruleErrors) ++ errorToString(hostnameErrors)
-      BadRequest(Json.obj("errors" -> errors ))
+      BadRequest(Json.obj("errors" -> errors))
     }
   }
 

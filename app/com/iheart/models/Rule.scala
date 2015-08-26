@@ -29,8 +29,6 @@ object Rule extends ModelValidations {
 
   def hasError[RuleError,T](coll: Seq[Either[RuleError,T]]): Boolean = coll.count(c => c.isLeft) > 0
 
-  def getErrors[S <: RuleError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
-
   def build(conditions: Seq[Either[RuleError,RuleCondition]],
             actions: Seq[Either[RuleError, RuleAction]],
             matchType: String,
@@ -41,6 +39,7 @@ object Rule extends ModelValidations {
       isValid(Seq(validMatchType(matchType),
                   validateSingleAction(actions.map(_.right.get)),
                   validateNameValAction(actions.map(_.right.get)),
+                  validateNameValCondition(conditions.map(_.right.get)),
                   validateNameAction(actions.map(_.right.get)),
                   validateBoolAction(actions.map(_.right.get)) )) match {
         case Left(x) => Logger.info("error with rule: " + x.toString()); Left(RuleError(x))

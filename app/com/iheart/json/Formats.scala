@@ -1,6 +1,7 @@
 package com.iheart.json
 
 import com.iheart.models._
+import play.Logger
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
@@ -35,21 +36,14 @@ object Formats {
   implicit val hostnameFormat: Reads[Either[HostnameError,Hostname]] =
     ( JsPath \ "hostname").read[String].map(h => (Hostname.build(h)))
 
-  //VclRequest
-  case class VclRequest(hostnames: Seq[Either[HostnameError,Hostname]], rules: Seq[Either[RuleError,Rule]])
+
 
   implicit val vclRequestReads = (
     ( JsPath \ "hostnames").read[Seq[Either[HostnameError,Hostname]]] and
-    ( JsPath \ "rules").read[Seq[Either[RuleError,Rule]]]
-    )(VclRequest)
+    ( JsPath \ "ordered_rules").read[Seq[Either[RuleError,Rule]]] and
+    ( JsPath \ "global_rules").read[Seq[Either[RuleError,Rule]]]
+    )(VclRequest.build _)
 
-
-  trait BaseError {
-    def errors: Seq[String]
-  }
-
-  case class RuleError(errors: Seq[String]) extends BaseError
-  case class HostnameError(errors: Seq[String]) extends BaseError
 
   implicit val errorWrites: Writes[RuleError] = Json.writes[RuleError]
   implicit val hostnameErrorWrites = Json.writes[HostnameError]

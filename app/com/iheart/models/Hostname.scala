@@ -1,7 +1,5 @@
 package com.iheart.models
 
-import com.iheart.json.Formats.HostnameError
-import play.Logger
 
 case class Hostname(name: String, id: String = java.util.UUID.randomUUID.toString )
 

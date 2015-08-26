@@ -1,6 +1,5 @@
 package com.iheart.models
 
-import com.iheart.json.Formats.RuleError
 import com.iheart.models.VclConfigAction._
 import com.iheart.util.VclUtils.VclUnits.VclUnits
 import com.iheart.util.VclUtils._
