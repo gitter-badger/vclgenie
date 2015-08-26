@@ -10,8 +10,8 @@ case class VclCondition(label: String,
 
 object VclConfigCondition {
 
-  val requestUrl = VclCondition("Request Url", SingleCond,Seq(Contains,DoesNotContain))
-  val contentType = VclCondition("Content Type", SingleCond, Seq(Contains,DoesNotContain,Matches,DoesNotMatch))
+  val requestUrl = VclCondition("Request Url", SingleCond,Seq(Matches,DoesNotMatch))
+  val contentType = VclCondition("Content Type", SingleCond, Seq(Matches,DoesNotMatch))
   val clientIp = VclCondition("Client IP/Network", SingleCond, Seq(Matches, DoesNotMatch))
   val requestParam = VclCondition("Request Parameter", NameValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
   val clientCookie = VclCondition("Cookie", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))

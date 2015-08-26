@@ -56,7 +56,7 @@ trait VCLHelpers {
 
     rules.filter(_.needsAcl).map { rule =>
 
-      globalConfig += "acl rule_" + rule.id + "{ \n"
+      globalConfig += "acl acl_" + rule.id + "{ \n"
       val aclRules = rule.conditions.filter(f => f.condition == VclConfigCondition.clientIp )
 
       aclRules.map { aclrule =>
@@ -121,6 +121,11 @@ trait VCLHelpers {
     case VclUnits.SECONDS => "s"
   }
 
+  def toNetwork(s: String) = s match {
+    case x if x.contains("/") => x
+    case x => x + "/32"
+  }
+
 
   def vclAction(ruleaction: RuleAction, vclFunction: VclFunctionType) = ruleaction.action match  {
     case VclConfigAction.doNotCache => "set beresp.ttl = 0s; "
@@ -146,15 +151,15 @@ trait VCLHelpers {
       case Equals => s"$field == $quoteChar$value$quoteChar"
       case DoesNotEqual => s"$field != $quoteChar$value$quoteChar"
       case Matches => s"$field ~ $quoteChar$value$quoteChar"
-      case Contains => s"$field ~ $quoteChar$value$quoteChar"
       case DoesNotMatch =>  s"$field !~ $quoteChar$value$quoteChar"
-      case DoesNotContain => s"$field !~ $quoteChar$value$quoteChar"
 //      case "greaterthan" => s"$field > $value"
 //      case "lessthan" => s"$field < $value"
 //      case "startswith" => s"$field ~ $quoteChar^$value$quoteChar"
       case x => "UNKNOWN OP " + x
     }
   }
+
+  def toAcl(rule: Rule) = "acl_" + rule.id.toString
 
   def vclCondition(rule: Rule, rulecondition: RuleCondition) = rulecondition.condition match {
     case VclConfigCondition.requestUrl =>
@@ -163,7 +168,7 @@ trait VCLHelpers {
     case VclConfigCondition.contentType =>
       val contentTypes = rulecondition.value.split(",").map(u => u.trim).mkString("|")
       " ( " + opToText("req.http.ext",rulecondition.matcher.get,contentTypes) + " ) "
-    case VclConfigCondition.clientIp => " ( " + opToText("client.ip",rulecondition.matcher.get,"rule_" + rule.id,false) + " ) "
+    case VclConfigCondition.clientIp => " ( " + opToText("client.ip",rulecondition.matcher.get, toAcl(rule),false) + " ) "
     case VclConfigCondition.requestParam => " ( " + opToText("req.url",rulecondition.matcher.get,s"$rulecondition.conditionType.name=$rulecondition.value") + " ) "
     case VclConfigCondition.clientCookie =>
       val str = s"""header.get(req.http.cookie,"${rulecondition.name.get} = ${rulecondition.value}")"""

@@ -15,7 +15,7 @@ case class Rule(conditions: Seq[RuleCondition],
                 index: Option[Int] ,
                 id: String = java.util.UUID.randomUUID.toString) {
 
-  def needsAcl = false //conditions.count(c => c. == "needsACL") > 0
+  def needsAcl = this.conditions.count(c => c.condition == clientIp) > 0
 
   def toConfigAction(str: String) = actionMap(str)
   
@@ -33,8 +33,11 @@ object Rule extends ModelValidations {
             actions: Seq[Either[RuleError, RuleAction]],
             matchType: String,
             index: Option[Int]): Either[RuleError,Rule] = {
-    if (hasError(conditions) || hasError(actions))
+    if (hasError(conditions) || hasError(actions)) {
+      Logger.info("RULE ERRORS: " + getErrors(conditions))
       Left(RuleError(getErrors(conditions) ++ getErrors(actions)))
+    }
+
     else {
       isValid(Seq(validMatchType(matchType),
                   validateSingleAction(actions.map(_.right.get)),

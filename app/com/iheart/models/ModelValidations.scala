@@ -7,6 +7,8 @@ import com.iheart.util.VclUtils.VclActionType._
 import com.iheart.util.VclUtils.VclConditionType._
 import play.Logger
 
+import scala.util.matching.Regex
+
 
 trait ModelValidations {
 
@@ -14,6 +16,15 @@ trait ModelValidations {
   type Validation = Either[ValidationError,Boolean]
 
   def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
+
+  object RegexUtils {
+    class RichRegex(underlying: Regex) {
+      def matches(s: String) = underlying.pattern.matcher(s).matches
+    }
+    implicit def regexToRichRegex(r: Regex) = new RichRegex(r)
+  }
+
+  import RegexUtils._
 
   def isValid(validations: Seq[Validation]): Either[Seq[ValidationError],Boolean]  = {
 
@@ -39,12 +50,35 @@ trait ModelValidations {
   def validCondition(key: String): Validation =
     conditionMap.get(key).isDefined.toValidate("Invalid condition key " + key)
 
+  def validNetwork(acl: String): Boolean = {
+    val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
+    val net = acl match {
+      case x if x.contains("/") => x
+      case x => x + "/32"
+    }
+    pattern matches net
+  }
+
+  def validAcl(key: String, value: String): Validation =
+    (!(conditionMap.get(key).isDefined && conditionMap(key) == clientIp && !validNetwork(value))).toValidate("Invalid acl " + value)
+
   def validateNameValCondition(conditions: Seq[RuleCondition]): Validation =
     (conditions.count(c => c.condition.conditionType == NameValCond && (c.name.isEmpty || c.value.isEmpty)) == 0).toValidate("NameVal conditions must have name and value")
 
 
   def validMatcher(key: String): Validation =
     vclMatcherMap.get(key).isDefined.toValidate("Invalid matcher " + key + " specified")
+
+  def validMatcherForCondition(key: String, m: String) = {
+    val cond = conditionMap.get(key)
+    val matcher = vclMatcherMap.get(m)
+
+    (cond,matcher) match {
+      case (Some(c), Some(mat)) =>
+        c.vclMatchers.contains(mat._1).toValidate("You can not use matcher " + m + " with condition " + key)
+      case _ => Right(true)
+    }
+  }
 
 
   def validAction(key: String): Validation =
@@ -69,5 +103,8 @@ trait ModelValidations {
 
   def validUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
 
-  def hasIndex(rules: Seq[Either[RuleError,Rule]]) = (rules.count(r => r.isRight && r.right.get.index.isDefined) == rules.size).toValidate("All ordered rules must have an index field")
+  def hasIndex(rules: Seq[Either[RuleError,Rule]]) = {
+    val valid = rules.count(r => r.isRight)
+    (rules.count(r => r.isRight && r.right.get.index.isDefined) == valid).toValidate("All ordered rules must have an index field")
+  }
 }

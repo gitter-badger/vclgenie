@@ -50,11 +50,12 @@ trait BaseController {
 
   implicit class validVclRequestClass(req: JsSuccess[Either[RequestError,VclRequest]]) {
 
-    def request: VclRequest = req.get.right.get
+    lazy val request: VclRequest = req.get.right.get
+    lazy val requestErr: RequestError = req.get.left.get
 
     def isValid: Boolean =
       req.get.isRight match {
-        case false => false
+        case false => Logger.info("isValid is False"); false
         case true =>
             request.orderedRules.count(s => s.isLeft) == 0 &&
             request.hostnames.count(h => h.isLeft) == 0 &&
@@ -94,6 +95,8 @@ trait BaseController {
     def errorToString[T <: BaseError](c: Seq[T]): Seq[String] = c.flatMap(e => e.errors)
 
     def errorJF = Future {
+      Logger.info("returning errors")
+      Logger.info("Rule Errors:" + errorToString(ruleErrors))
       val errors: Seq[String] = errorToString(ruleErrors) ++ errorToString(hostnameErrors)
       BadRequest(Json.obj("errors" -> errors))
     }

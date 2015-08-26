@@ -1,5 +1,7 @@
 package com.iheart.models
 
+import play.Logger
+
 
 case class VclRequest(hostnames: Seq[Either[HostnameError,Hostname]],
                       orderedRules: Seq[Either[RuleError,Rule]],
@@ -12,8 +14,8 @@ object VclRequest extends ModelValidations {
             orderedRules: Seq[Either[RuleError,Rule]],
             globalRules: Seq[Either[RuleError,Rule]]): Either[RequestError,VclRequest] = {
     isValid(Seq(hasIndex(orderedRules))) match {
-      case Left(x) => Left(RequestError(x))
-      case Right(y) => Right(VclRequest(hostnames,orderedRules,globalRules))
+      case Left(x) => Logger.info("Request is invalid, returning " + x); Left(RequestError(x))
+      case Right(y) => Logger.info("Request is valid, returning:" +y); Right(VclRequest(hostnames,orderedRules,globalRules))
     }
   }
 }

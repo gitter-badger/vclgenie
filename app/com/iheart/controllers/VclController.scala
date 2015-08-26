@@ -29,7 +29,7 @@ class VclController extends Controller with BaseController {
           val hostnames: Seq[Hostname] = success.toHostnames
           val v = new VclGenerator
           v.generateRuleset(hostnames,orules, grules).successF
-        case false =>  success.errorJF
+        case false => Logger.info("Sending back error");  success.errorJF
       }
       case e: JsError =>  e.errorJF
     }

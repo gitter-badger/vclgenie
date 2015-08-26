@@ -33,7 +33,7 @@ object VclUtils {
 
   object VclMatchers extends Enumeration {
     type VclMatchers = Value
-    val Contains, DoesNotContain, Matches, DoesNotMatch, Equals, DoesNotEqual = Value
+    val Matches, DoesNotMatch, Equals, DoesNotEqual = Value
   }
 
   object VclMatchType extends Enumeration {
@@ -50,8 +50,6 @@ object VclUtils {
   import com.iheart.util.VclUtils.VclMatchers._
 
   val vclMatcherMap: Map[String,(VclMatchers.Value,String)] = Map(
-    "contains" -> (Contains,"Contains"),
-    "does_not_contain" -> (DoesNotContain,"Does Not Contain"),
     "matches" -> (Matches,"Matches"),
     "does_not_match" -> (DoesNotMatch,"Does Not Match"),
     "equals" -> (Equals,"Equals"),
@@ -59,8 +57,6 @@ object VclUtils {
   )
 
   val vclMatcherReverseMap = Map(
-     Contains -> "contains",
-     DoesNotContain -> "does_not_contain",
      Matches -> "matches",
      DoesNotMatch -> "does_not_match",
      Equals -> "equals",
