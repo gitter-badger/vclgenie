@@ -113,6 +113,19 @@ trait VCLHelpers {
 //  }
 
 
+  def generateBackends(b: Seq[Backend]) = {
+      def generateBackend(backend: Backend) = {
+        globalConfig += "backend " + backend.name + " { \n"
+        globalConfig += addTabs(1) + ".host = \"" + backend.host + "\" ;\n"
+        globalConfig += addTabs(1) + ".host_header = \"" + backend.hostHeader + "\" ; \n"
+        globalConfig += addTabs(1) + ".port = \"" + backend.port + "\"; \n"
+        if (backend.probe.isDefined)
+          globalConfig += addTabs(1) + ".probe = healthcheck; \n\n"
+        globalConfig += "}\n\n"
+      }
+
+     b.map(backend => generateBackend(backend))
+  }
 
   def toTTL(units: VclUnits) = units match {
     case VclUnits.DAYS => "d"

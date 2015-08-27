@@ -36,17 +36,26 @@ object Formats {
   implicit val hostnameFormat: Reads[Either[HostnameError,Hostname]] =
     ( JsPath \ "hostname").read[String].map(h => (Hostname.build(h)))
 
+  implicit val backendFormat: Reads[Either[BackendError,Backend]] = (
+    ( JsPath \ "name").read[String] and
+    ( JsPath \ "host").read[String] and
+    ( JsPath \ "host_header").read[String] and
+    ( JsPath \ "port").readNullable[Int] and
+    ( JsPath \ "probe").readNullable[String]
+    )(Backend.build _)
 
 
   implicit val vclRequestReads = (
     ( JsPath \ "hostnames").read[Seq[Either[HostnameError,Hostname]]] and
     ( JsPath \ "ordered_rules").read[Seq[Either[RuleError,Rule]]] and
-    ( JsPath \ "global_rules").read[Seq[Either[RuleError,Rule]]]
+    ( JsPath \ "global_rules").read[Seq[Either[RuleError,Rule]]] and
+    ( JsPath \ "backends").read[Seq[Either[BackendError,Backend]]]
     )(VclRequest.build _)
 
 
-  implicit val errorWrites: Writes[RuleError] = Json.writes[RuleError]
+  implicit val ruleErrorWrites: Writes[RuleError] = Json.writes[RuleError]
   implicit val hostnameErrorWrites = Json.writes[HostnameError]
+  implicit val backendErrorWrites = Json.writes[BackendError]
 
   class ReadsWithRequiredArgs[A](delegate: Reads[A]) extends Reads[A] {
     def reads(json: JsValue) = {

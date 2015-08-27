@@ -10,19 +10,7 @@ import play.Logger
 import scala.util.matching.Regex
 
 
-trait ModelValidations {
-
-  type ValidationError = String
-  type Validation = Either[ValidationError,Boolean]
-
-  def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
-
-  object RegexUtils {
-    class RichRegex(underlying: Regex) {
-      def matches(s: String) = underlying.pattern.matcher(s).matches
-    }
-    implicit def regexToRichRegex(r: Regex) = new RichRegex(r)
-  }
+trait ModelValidations extends ModelHelpers {
 
   import RegexUtils._
 
@@ -38,20 +26,6 @@ trait ModelValidations {
       case Seq() => Right(true)
       case x => Left(x)
     }
-  }
-
-  implicit class validationToEither(b: Boolean) {
-    def toValidate(s: String): Validation = b match {
-      case true => Right(true)
-      case false => Left(s)
-    }
-  }
-
-  implicit class validationOfString(s: String) {
-    def asInt: Option[Int] = try {
-                Some(s.toInt)
-              } catch {
-                case e: NumberFormatException => None }
   }
 
   def validCondition(key: String): Validation =
@@ -113,4 +87,7 @@ trait ModelValidations {
     val valid = rules.count(r => r.isRight)
     (rules.count(r => r.isRight && r.right.get.index.isDefined) == valid).toValidate("All ordered rules must have an index field")
   }
+
+  def validateBackend(name: String, host: String) =
+     true.toValidate("This can never be false :)")
 }

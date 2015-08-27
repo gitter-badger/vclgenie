@@ -27,8 +27,9 @@ class VclController extends Controller with BaseController {
           val orules: Seq[Rule] = success.toOrderedRules
           val grules: Seq[Rule] = success.toGlobalRules
           val hostnames: Seq[Hostname] = success.toHostnames
+          val backends: Seq[Backend] = success.toBackends
           val v = new VclGenerator
-          v.generateRuleset(hostnames,orules, grules).successF
+          v.generateRuleset(hostnames,orules, grules,backends).successF
         case false => Logger.info("Sending back error");  success.errorJF
       }
       case e: JsError =>  e.errorJF

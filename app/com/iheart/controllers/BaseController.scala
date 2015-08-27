@@ -91,6 +91,12 @@ trait BaseController {
         case true => request.hostnames.filter(res => res.isRight).map(res => res.right.get)
       }
 
+    def toBackends =
+      req.get.isRight match {
+        case false => Seq()
+        case true => request.backends.filter(res => res.isRight).map(res => res.right.get)
+      }
+
 
     def errorToString[T <: BaseError](c: Seq[T]): Seq[String] = c.flatMap(e => e.errors)
 
