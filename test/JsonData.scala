@@ -42,7 +42,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }],
+
+                                 "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
   val ruleJson2 = Json.parse("""{
@@ -82,7 +85,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
 
@@ -123,7 +129,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }],
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
   val ruleJson4 = Json.parse("""{
@@ -165,7 +174,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
 
@@ -207,7 +219,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
 
@@ -250,7 +265,10 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
 
@@ -292,9 +310,57 @@ trait JsonData {
                                       ],
 
                                 "hostnames" :
-                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }]
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
                               }""")
 
+
+  val ruleJson8 = Json.parse("""{
+                                  "ordered_rules" :
+                                      [
+                                         {
+                                          "conditions" : [ { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue", "name" : "somename" },
+                                                           { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue2", "name" : "somename2"},
+                                                           { "condition" : "request_url", "matcher" : "matches", "value" : "/cookieurl"},
+                                                           { "condition" : "client_ip" , "matcher" : "matches", "value" : "3.3.3.3" }
+                                                         ],
+                                         "actions" : [
+                                           { "action" : "remove_cookies", "value" : "somecookie" }
+                                                      ],
+                                          "match_type" : "BADVAL",
+                                          "index" : 2
+                                        },
+
+                                      {
+                                          "conditions" : [ { "condition" : "request_url", "matcher" : "matches", "value" : "/home" },
+                                                           { "condition" : "request_header", "matcher" : "matches", "value" : "someheadervalue", "name" : "X-HTTP-Something"}],
+                                          "actions" : [ { "action" : "set_ttl", "value" : "300", "units" : "SECONDS" },
+                                                        { "action" : "set_backend", "name" : "backend2" }
+                                                      ],
+                                          "match_type" : "ANY",
+                                          "index" : 1
+                                        }
+                                      ],
+
+                                  "global_rules" : [
+                                       {
+                                          "conditions" : [ { "condition" : "request_header", "matcher" : "equals", "value" : "globalvalue", "name" : "X-HTTP-Test" },
+                                                           { "condition" : "request_url", "matcher" : "matches", "value" : "/redirecter"}
+                                                         ],
+                                          "actions" : [ { "action" : "remove_request_header"  } ],
+                                          "match_type" : "ALL"
+
+                                        }
+                                      ],
+
+                                "hostnames" :
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
+                              }""")
 
 
 }

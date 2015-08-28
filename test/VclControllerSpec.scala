@@ -60,6 +60,13 @@ class VclControllerSpec extends Specification with JsonData {
       bodyText must contain("actions of type NameAction must have a name")
     }
 
+    "not allow you to set an invalid backend name in an action " in new WithApplication {
+      val Some(result) = route(FakeRequest(POST,"/vcl").withJsonBody(ruleJson8))
+      status(result) must equalTo(BAD_REQUEST)
+      val bodyText = contentAsString(result)
+      bodyText must contain("Invalid backend name specified")
+    }
+
 
   }
 }
