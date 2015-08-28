@@ -25,7 +25,7 @@ class VclGenerator extends VCLHelpers {
     globalConfig += conditions.mkString(conditional)
     globalConfig += " ) { \n"
     globalConfig += actions.mkString("\n")
-    globalConfig += addTabs(1) + "}\n"
+    globalConfig += "\n" + addTabs(1) + "}\n"
   }
 
   def parseGlobalRules(ruleset: String, rules: Seq[Rule]) = {
@@ -61,7 +61,7 @@ class VclGenerator extends VCLHelpers {
     globalConfig += conditions.mkString(conditional)
     globalConfig += " ) { \n"
     globalConfig += actions.mkString("\n")
-    globalConfig += addTabs(1) + "}\n"
+    globalConfig += "\n" + addTabs(1) + "}\n"
   }
 
   //  def parseOrderedRuleAcc(rules: List[Rule], vclFunction: String, ruleNum: Int = 0, orderedVCL: String = "" ): String = rules match {

@@ -5,9 +5,6 @@ import com.iheart.models.VclConfigAction._
 import com.iheart.util.VclUtils._
 import com.iheart.util.VclUtils.VclActionType._
 import com.iheart.util.VclUtils.VclConditionType._
-import play.Logger
-
-import scala.util.matching.Regex
 
 
 trait ModelValidations extends ModelHelpers {
@@ -86,6 +83,14 @@ trait ModelValidations extends ModelHelpers {
   def hasIndex(rules: Seq[Either[RuleError,Rule]]) = {
     val valid = rules.count(r => r.isRight)
     (rules.count(r => r.isRight && r.right.get.index.isDefined) == valid).toValidate("All ordered rules must have an index field")
+  }
+
+  def validateBackendAction(rules: Seq[Either[RuleError,Rule]], backends: Seq[Either[BackendError,Backend]]): Validation = {
+    val backendNames: Seq[String] = backends.filter(_.isRight).map(_.right.get.name)
+    val referencedBackends = rules.filter(_.isRight).flatMap(_.right.get.actions.filter(_.action == setBackend)).map(_.name)
+
+    (referencedBackends.count(name => name.isDefined && !backendNames.contains(name.getOrElse(None))) == 0)
+       .toValidate("Invalid backend name specified")
   }
 
   def validateBackend(name: String, host: String) =

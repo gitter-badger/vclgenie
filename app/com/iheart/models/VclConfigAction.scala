@@ -19,6 +19,7 @@ object VclConfigAction {
   val removeRespHeader = VclAction("Remove Response Header", NameAction, Seq(vclFetch))
   val addReqHeader = VclAction("Add Request Header", NameValAction, Seq(vclRecv))
   val addRespHeader = VclAction("Add Response Header", NameValAction, Seq(vclFetch))
+  val setBackend = VclAction("Set backend", NameAction,Seq(vclRecv,vclFetch))
 
   val actionMap = Map(
     "do_not_cache" -> doNotCache,
@@ -26,10 +27,11 @@ object VclConfigAction {
     "http_redirect" -> httpRedirect,
     "add_cookie" -> addCookie,
     "remove_cookies" -> remCookies,
-     "deny_request" -> denyRequest,
+    "deny_request" -> denyRequest,
     "remove_request_header" -> removeReqHeader,
     "remove_response_header" -> removeRespHeader,
     "add_request_header" -> addReqHeader,
-    "add_response_header" -> addRespHeader
+    "add_response_header" -> addRespHeader,
+    "set_backend" -> setBackend
   )
 }

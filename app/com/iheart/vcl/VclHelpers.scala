@@ -54,12 +54,12 @@ trait VCLHelpers {
 
     val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
 
-    rules.filter(_.needsAcl).map { rule =>
+    rules.filter(_.needsAcl).foreach { rule =>
 
       globalConfig += "acl acl_" + rule.id + "{ \n"
       val aclRules = rule.conditions.filter(f => f.condition == VclConfigCondition.clientIp )
 
-      aclRules.map { aclrule =>
+      aclRules.foreach { aclrule =>
         val net = aclrule.value match {
           case x if x.contains("/") => x
           case x => x + "/32"
@@ -125,6 +125,8 @@ trait VCLHelpers {
       }
 
      b.map(backend => generateBackend(backend))
+
+     addToVcl("set req.backend = " + b.head.name, vclRecv)
   }
 
   def toTTL(units: VclUnits) = units match {
@@ -142,8 +144,8 @@ trait VCLHelpers {
 
   def vclAction(ruleaction: RuleAction, vclFunction: VclFunctionType) = ruleaction.action match  {
     case VclConfigAction.doNotCache => "set beresp.ttl = 0s; "
-    case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";\n"
-    case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;\n"
+    case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";"
+    case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;"
     case VclConfigAction.denyRequest => "error 403;"
     case VclConfigAction.removeReqHeader => "unset req.http." + ruleaction.value + ";"
     case VclConfigAction.removeRespHeader => "unset resp.http." + ruleaction.value + ";"
@@ -151,6 +153,7 @@ trait VCLHelpers {
     case VclConfigAction.addRespHeader => "set resp.http." + ruleaction.name + " = " + ruleaction.value + ";"
     case VclConfigAction.remCookies if vclFunction == vclFetch =>  "unset beresp.http.cookie ;"
     case VclConfigAction.remCookies if vclFunction == vclRecv =>  "unset resp.http.cookie;"
+    case VclConfigAction.setBackend => addTabs(2) + "set req.backend = " + ruleaction.name.get + ";"
     case _ => ""
   }
 
@@ -198,31 +201,12 @@ trait VCLHelpers {
  //  HOSTNAME FUNCTIONS
  // ****************************************************
 
-  def generateHostCondition(hostname: Hostname, vclFunction: VclFunctionType, idx: Int) = {
-
-    val ruleIf = if (idx > 0)
-      "else if ( "
-    else  "if ( "
-
-    var block = "\n "
-
-    block += s"""${ruleIf} req.http.Host == "${hostname.name}" ) { \n """
-    if (vclFunction == VclFunctionType.vclRecv)
-      block += s"""set req.backend = director_${hostname.id} ; \n """
-    block += addTabs(1) + "call ruleset_" + hostname.id + "_global_" + vclFunction + ";\n"
-    block += addTabs(1) + "call ruleset_" + hostname.id + "_ordered_" + vclFunction + ";\n"
-    block += " }\n"
-    addToVcl(block,vclFunction)
-  }
-
   def generateHostConditions(hostnames: Seq[Hostname], ruleset: String) = {
-    Logger.info("Generating configs for hostnames")
     val funcs = List(vclFetch, vclRecv, vclDeliver)
-
 
     funcs.foreach { vclfunc =>
       var block = "\n"
-      block += "if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
+      block += addTabs(1) + "if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
       if (vclfunc == VclFunctionType.vclRecv)
         block += addTabs(1) + s""" set req.backend = director_${ruleset} ; \n """
       block += addTabs(1) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
@@ -266,21 +250,11 @@ trait VCLHelpers {
                   |  # System Wide Subroutines
                   |  #----------------------------------------
                   |  sub cleanup_response_headers {
-                  |    unset resp.http.X-SS-PURGEURL;
-                  |    unset resp.http.X-SS-PURGEHOST;
                   |    unset resp.http.X-Varnish;
                   |  }
                   |
                   |  sub cleanup_request_headers {
-                  |    unset req.http.X-SS-ClientIP ;
-                  |    unset req.http.X-SS-RequestStart ;
-                  |    unset req.http.X-SS-Expiration;
-                  |    unset req.http.X-SS-Token;
-                  |    unset req.http.X-SS-Key;
                   |    unset req.http.ext ;
-                  |    unset req.http.X-GeoIP-Client;
-                  |    unset req.http.X-GeoIP;
-                  |    unset req.http.X-SS-Key;
                   |  }
                   |
                   |  sub set_geoip {
@@ -358,21 +332,7 @@ trait VCLHelpers {
                   |
                   |  }
                   |
-                  |
-                  |  probe healthcheck {
-                  |   .url = "/scalesimple/index.html";
-                  |   .interval = 5s;
-                  |   .timeout = 0.3 s;
-                  |   .window = 8;
-                  |   .threshold = 3;
-                  |   .initial = 3;
-                  |   .expected_response = 200;
-                  |  }
-                  |
-                  |  sub vcl_init {
-                  |     #geoip.init_database("/usr/local/share/GeoIP/GeoLiteCity.dat");
-                  |  }
-                  |
+
                   |"""
     .stripMargin
 

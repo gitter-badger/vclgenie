@@ -18,9 +18,10 @@ trait BaseController {
     def errorJF  = Future {
       val msgs = jserror.errors.flatMap { e =>
         e._2.map { v  =>
-          v.message
+          v.message + " : " + e._1.toString()
         }
       }
+      Logger.info("Error: " + jserror)
       BadRequest(Json.toJson(RuleError(msgs)))
     }
   }
@@ -72,6 +73,16 @@ trait BaseController {
       case false => Seq()
     }
 
+    def backendErrors: Seq[BackendError] = req.get.isRight match {
+      case true => request.backends.filter(b => b.isLeft).map(b => b.left.get)
+      case false => Seq()
+    }
+
+    def requestErrors: Seq[RequestError] = req.get.isLeft match {
+      case true => Seq(req.get.left.get)
+      case false => Seq()
+    }
+
     def toOrderedRules: Seq[Rule] =
       req.get.isRight match {
         case false => Seq()
@@ -101,9 +112,8 @@ trait BaseController {
     def errorToString[T <: BaseError](c: Seq[T]): Seq[String] = c.flatMap(e => e.errors)
 
     def errorJF = Future {
-      Logger.info("returning errors")
-      Logger.info("Rule Errors:" + errorToString(ruleErrors))
-      val errors: Seq[String] = errorToString(ruleErrors) ++ errorToString(hostnameErrors)
+      val errors: Seq[String] = errorToString(ruleErrors) ++ errorToString(hostnameErrors) ++ errorToString(backendErrors) ++ errorToString(requestErrors)
+      Logger.info("returning errors : " + errors)
       BadRequest(Json.obj("errors" -> errors))
     }
   }
