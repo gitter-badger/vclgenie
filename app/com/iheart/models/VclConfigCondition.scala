@@ -4,18 +4,19 @@ import com.iheart.util.VclUtils.VclConditionType._
 import com.iheart.util.VclUtils.VclMatchers._
 
 
-case class VclCondition(label: String,
+case class VclCondition( key: String,
+                         label: String,
                         conditionType: VclConditionType,
                         vclMatchers: Seq[VclMatchers] )
 
 object VclConfigCondition {
 
-  val requestUrl = VclCondition("Request Url", SingleCond,Seq(Matches,DoesNotMatch))
-  val contentType = VclCondition("Content Type", SingleCond, Seq(Matches,DoesNotMatch))
-  val clientIp = VclCondition("Client IP/Network", SingleCond, Seq(Matches, DoesNotMatch))
-  val requestParam = VclCondition("Request Parameter", NameValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
-  val clientCookie = VclCondition("Cookie", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
-  val requestHeader = VclCondition("Request header", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
+  val requestUrl = VclCondition("request_url","Request Url", ValCond,Seq(Matches,DoesNotMatch))
+  val contentType = VclCondition("content_type","Content Type", ValCond, Seq(Matches,DoesNotMatch))
+  val clientIp = VclCondition("client_ip","Client IP/Network", ValCond, Seq(Matches, DoesNotMatch))
+  val requestParam = VclCondition("request_param","Request Parameter", NameValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
+  val clientCookie = VclCondition("cookie","Cookie", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
+  val requestHeader = VclCondition("request_header","Request header", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
 
   val conditionMap = Map(
     "request_url" -> requestUrl,
@@ -25,6 +26,6 @@ object VclConfigCondition {
     "cookie" -> clientCookie,
     "request_header" -> requestHeader)
 
-  val singleValConditions = conditionMap.filter(x => x._2.conditionType == SingleCond)
+  val singleValConditions = conditionMap.filter(x => x._2.conditionType == ValCond)
   val nameValueConditions = conditionMap.filter(x => x._2.conditionType == NameValCond)
 }

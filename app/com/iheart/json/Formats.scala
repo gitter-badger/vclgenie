@@ -1,6 +1,12 @@
 package com.iheart.json
 
 import com.iheart.models._
+import com.iheart.util.VclUtils.VclActionType.VclActionType
+import com.iheart.util.VclUtils.VclConditionType._
+import com.iheart.util.VclUtils.VclFunctionType._
+import com.iheart.util.VclUtils.VclMatchers._
+import com.iheart.util.VclUtils._
+import com.iheart.models.VclConfigCondition._
 import play.Logger
 import play.api.libs.json._
 import play.api.libs.json.Reads._
@@ -63,6 +69,62 @@ object Formats {
         case e: IllegalArgumentException => JsError(e.getMessage)
       }
     }
+  }
+
+
+
+
+  case class ConfigResponse(nameValueConditions: Map[String,VclCondition],
+                            singleValueConditions: Map[String,VclCondition],
+                            actions: Map[String, VclAction])
+
+  implicit val vclCondTypeWrites: Writes[VclConditionType] = new Writes[VclConditionType] {
+    def writes(condType: VclConditionType) = {
+      Json.toJson(condType.toString)
+    }
+  }
+
+  implicit val vclMatcherWrites: Writes[VclMatchers] = new Writes[VclMatchers] {
+    def writes(matcher: VclMatchers) = {
+      val str = vclMatcherReverseMap(matcher)
+      val toForm = vclMatcherMap(str)._2
+      Json.obj("label" ->  toForm, "key" -> str )
+    }
+  }
+
+  implicit val vclActionTypeWrites: Writes[VclActionType] = new Writes[VclActionType] {
+    def writes(actionType: VclActionType) = {
+      Json.toJson(actionType.toString)
+    }
+  }
+
+  implicit val vclActionWrites: Writes[VclAction] = new Writes[VclAction] {
+    def writes(a: VclAction) = {
+      Json.obj("key" -> a.key,
+               "label" -> a.label,
+               "action_type" -> a.actionType,
+               "vcl_functions" -> a.vclFunctions)
+    }
+  }
+
+  implicit val vclCondWrites: Writes[VclCondition] = new Writes[VclCondition] {
+     def writes(condition: VclCondition) = {
+       Json.obj("key" -> condition.key,
+                "label" -> condition.label,
+                "condition_type" -> condition.conditionType,
+                "vcl_matchers" -> condition.vclMatchers)
+     }
+  }
+
+  implicit val crWrites: Writes[ConfigResponse] = new Writes[ConfigResponse] {
+    def writes(cr: ConfigResponse): JsValue = {
+      val nvc = cr.nameValueConditions.map( (nv) => Json.toJson(nv._2))
+      val svc = cr.singleValueConditions.map( (sv) => Json.toJson(sv._2))
+      val actions = cr.actions.map( a => Json.toJson( a._2))
+      val matchers = vclMatcherMap.map( v => Json.obj("key" -> v._1, "label" -> v._2._2))
+      Json.obj("conditions" -> svc.++(nvc), "actions" -> actions, "vcl_matchers" -> matchers)
+    }
+
   }
 }
 

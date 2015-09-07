@@ -1,0 +1,181 @@
+
+<tabset>
+
+    <!-- ********************************
+         HOSTNAMES 
+    ********************************* --> 
+    <tab heading="Hostnames">
+
+      <Br/>
+      <div class="col-md-8">Add Hostname: 
+            <input type="text" ng-model="ruleset.hostname"><br/><br/>
+            <button class="btn btn-success" type="submit" ng-click="addHost()">Add Host</button>
+      </div>
+      <div class="col-md-4">Hostnames:<br/>
+         <div ng-repeat="host in ruleset.hostnames">
+           <br/>{{host}} <a href ng-click="removeHost($index)">Remove</a>
+        </div>
+      </div>
+    </tab>
+
+
+     <!-- ********************************
+         Global Rules  
+    ********************************* --> 
+    <tab heading="Global Rules"> 
+
+    <div class="col-md-6">
+
+     <form class="form-horizontal">
+
+      <br/>
+      <div class="form-group">
+      <label class="control-label">Apply this rule if </label>
+          <br/><input type='radio' value="any" ng-model='globalrule.rule_match_type'>&nbsp; ANY conditions match
+          <br/><input type='radio' value="all" ng-model='globalrule.rule_match_type'>&nbsp; ALL conditions match
+      </div>
+
+       <!-- ************** -->
+      <!-- CONDITION --> 
+      <!-- ************** -->
+      <button class="btn btn-outline" ng-click="addCondition('global')">Add Condition</button><br/><Br/>
+
+      <div ng-repeat="globalcondition in globalrule.conditions"  >
+
+      <div style="background: #e7e7e7; padding: 20px;">
+
+      <div class="form-group" >
+      <label class="control-label col-sm-2">Condition</label>
+      <div class="col-sm-10">
+        <select class="form-control" ng-model="globalrule.conditions[$index].condition" ng-change="selectCondition(globalrule.conditions[$index].condition,'global')">
+         <option ng-repeat="condition in form.conditions" value="{{condition.key}}">{{condition.label}}</option>
+        </select>
+      </div>
+      </div>
+
+
+      <span ng-if="currentGlobalCondition">
+      <div class="form-group">
+         <label class="control-label  col-sm-2">Match Type</label> 
+         <div class="col-sm-10">
+          <select class="form-control" ng-model="globalrule.conditions[$index].matcher">
+            <option ng-repeat="matcher in currentGlobalCondition.vcl_matchers" value="{{matcher.key}}">{{matcher.label}}</option>
+          </select>
+         </div>
+      </div>
+      </span>
+
+      <span ng-if="isNameValCond(globalrule.conditions[$index].condition)">
+        <div class="form-group">
+        <label class="control-label col-sm-2">Name  </label> 
+        <div class="col-sm-10">
+            <input class="form-control" type=text ng-model="globalrule.conditions[$index].name">
+        </div>
+       </div>
+      </span>
+
+      <span ng-if="currentGlobalCondition"> 
+       <div class="form-group">
+        <label class="control-label col-sm-2">Value</label> 
+        <div class="col-sm-10">
+          <input class="form-control" type=text ng-model="globalrule.conditions[$index].value">
+        </div>
+       </div>
+      </span>
+
+      </div>
+
+      <br/>
+
+      </div> <!-- end condition --> 
+
+
+      <hr/>
+
+      <!-- ************** -->
+      <!-- ACTIONS --> 
+      <!-- ************** -->
+      <button class="btn btn-outline" ng-click="addAction('global')">Add Action</button><br/><Br/>
+
+        <div ng-repeat="globalaction in globalrule.actions"  >
+
+      <div style="background: #e7e7e7; padding: 20px;">
+
+      <div class="form-group" >
+      <label class="control-label col-sm-2">Action</label>
+      <div class="col-sm-10">
+        <select class="form-control" ng-model="globalrule.actions[$index].action" ng-change="selectAction(globalrule.actions[$index].action, $index,'global')">
+         <option ng-repeat="action in form.actions" value="{{action.key}}">{{action.label}}</option>
+        </select>
+      </div>
+      </div>
+
+
+      <span ng-if="isNameValAction(globalrule.actions[$index].action)">
+        <div class="form-group">
+        <label class="control-label col-sm-2">Name  </label> 
+        <div class="col-sm-10">
+            <input class="form-control" type=text ng-model="globalrule.action[$index].name">
+        </div>
+       </div>
+      </span>
+
+      <span ng-if="currentGlobalAction && isValAction(globalrule.actions[$index].action)"> 
+       <div class="form-group">
+        <label class="control-label col-sm-2">Value</label> 
+        <div class="col-sm-10">
+          <input class="form-control" type=text ng-model="globalrule.actions[$index].value">
+        </div>
+       </div>
+      </span>
+
+      </div>
+
+      <br/>
+
+      </div> <!-- end condition --> 
+
+
+      <br/><button class="btn btn-success" ng-click="addGlobalRule()">Add Rule</button>
+
+      </form>
+     
+    </div>
+
+    <div class="col-md-6">
+       <Br/>Rules:<br/>
+       <br/><div ng-repeat="rule in ruleset.global_rules">
+           Match: {{rule.matcher}}<br/>
+           <br/><div ng-repeat="c in rule.conditions">
+            {{conditionToText(c.condition)}} {{c.name}} {{matcherToText(c.matcher)}} {{c.value}}
+          </div>
+          <br/><div ng-repeat="a in rule.actions">
+            {{actionToText(a.action)}} {{a.name}} {{a.value}}
+          </div>
+          <br/> <a href ng-click="removeGlobalRule($index)">Remove Rule</a>
+        <hr/>
+       </div>
+    </div>
+
+    </tab>
+
+
+    <tab heading="Ordered Rules">Ordered Rules</tab>
+
+    <tab heading="VCL">
+       <div class="col-md-12">
+        <br/><button class="btn btn-success" ng-click="generateVcl()">Generate VCL</button>
+
+        <div><pre>{{vcl}}</pre></div>
+    </tab>
+
+</tabset>
+
+
+<!--
+<script type="text/javascript">
+$('.nav-tabs a').click(function(){
+    $(this).tab('show');
+});
+</script>
+-->

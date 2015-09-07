@@ -23,12 +23,12 @@ object VclUtils {
 
   object VclActionType extends Enumeration {
     type VclActionType = Value
-    val Bool, SingleAction, NameValAction, NameAction, Units = Value
+    val Bool, SingleAction, NameValAction, ValAction, Units = Value
   }
 
   object VclConditionType extends Enumeration {
     type VclConditionType = Value
-    val SingleCond, NameValCond, Dropdown = Value
+    val ValCond, NameValCond, Dropdown = Value
   }
 
   object VclMatchers extends Enumeration {
@@ -41,7 +41,7 @@ object VclUtils {
     type VclMatchType = Value
     val ANY, ALL = Value
 
-    def fromString(s: String) = s match {
+    def fromString(s: String) = s.toUpperCase match {
       case "ALL" => ALL
       case "ANY" => ANY
     }

@@ -42,4 +42,13 @@ class VclController extends Controller with BaseController {
   }
 
 
+  def config = Action.async { implicit request =>
+    val nvConditions = VclConfigCondition.nameValueConditions
+    val svConditions = VclConfigCondition.singleValConditions
+    val actions = VclConfigAction.actionMap
+
+    Future { Ok(Json.toJson(ConfigResponse(nvConditions,svConditions,actions))) }
+  }
+
+
 }

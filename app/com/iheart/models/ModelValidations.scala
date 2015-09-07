@@ -67,13 +67,13 @@ trait ModelValidations extends ModelHelpers {
 
   //validate the matchType
   def validateMatchType(m: String): Validation =
-    (m == "ANY" || m == "ALL").toValidate("Invalid matcher type of " + m)
+    (m.toUpperCase == "ANY" || m.toUpperCase == "ALL").toValidate("Invalid matcher type of " + m)
 
   def validateNameValAction(actions: Seq[RuleAction]) =
     (actions.count(a => a.action.actionType == NameValAction && (a.name.isEmpty || a.value.isEmpty)) == 0).toValidate("NameVal actions must have name and value")
 
-  def validateNameAction(actions: Seq[RuleAction]) =
-    (actions.count(a => a.action.actionType == NameAction && a.name.isEmpty) == 0).toValidate("actions of type NameAction must have a name")
+  def validateValAction(actions: Seq[RuleAction]) =
+    (actions.count(a => a.action.actionType == ValAction && a.value.isEmpty) == 0).toValidate("actions of type ValAction must have a name")
 
   def validateBoolAction(actions: Seq[RuleAction]) =
     (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (!a.value.getOrElse("").asInt.contains(0) && !a.value.getOrElse("").asInt.contains(1)))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
