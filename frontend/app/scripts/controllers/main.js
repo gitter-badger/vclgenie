@@ -8,7 +8,7 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
     $scope.globalrule = {} ; 
     $scope.globalrule.conditions = [] ; 
     $scope.globalrule.actions = [] ; 
-    $scope.globalrule.rule_match_type = 'any' ; 
+    //$scope.globalrule.rule_match_type = undefined ; 
  
     //FOR EACH RULE 
     $scope.orderedrule = {} ;     
@@ -90,11 +90,11 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
   	if (rule_type == 'global') {
   	   $scope.currentGlobalAction = action ; 
-       if (action.action_type == 'Bool')  $scope.globalrule.actions[idx].value = "1" ; 
+      // if (action.action_type == 'Bool')  $scope.globalrule.actions[idx].value = "1" ; 
     }
   	else if (rule_type == 'ordered') {
   		$scope.currentOrderedAction = action ; 
-      if (action.action_type == 'Bool') $scope.orderedrule.actions[idx].value = "1"; 
+     // if (action.action_type == 'Bool') $scope.orderedrule.actions[idx].value = "1"; 
     }
   }
 
@@ -107,6 +107,7 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
   $scope.addGlobalRule = function() {
   	var rule = {} ;
+  	console.log("RULE MATCH TYPE : " ); console.log($scope.globalrule.rule_match_type); 
 
   	rule.conditions = $scope.globalrule.conditions ; 
     rule.actions = $scope.globalrule.actions ; 
@@ -137,10 +138,28 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
     return action.label; 
   }
 
+  $scope.showUnits = function(action) {
+    var a = getActionByKey(action);
+    if (a.action_type == 'Units') {
+      return true; 
+    }
+    else 
+      return false ; 
+  }
+
+  $scope.valueClass = function(action) {
+    var a = getActionByKey(action);
+    if (a.action_type == 'Units')
+      return 'col-sm-8'; 
+    else
+      return 'col-sm-10';
+  }
+
   $scope.generateVcl = function() {
-  	 Api.generate($scope.ruleset.hostnames, [], $scope.ruleset.global_rules ).then(function(data) {
-      $scope.vcl = data ; 
-     })
+  	 Api.generate($scope.ruleset.hostnames, [], $scope.ruleset.global_rules ).then(
+      function(response) {  $scope.vcl = response.data ; },
+      function(error) { $scope.errors = error.data ; }
+     )
   }
 
   function resetGlobalCondition() {
@@ -148,7 +167,7 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
     $scope.currentGlobalAction = undefined ; 
   	$scope.globalrule.conditions = []; 
     $scope.globalrule.actions = [];  
-    $scope.globalrule.rule_match_type = 'any' ; 	
+    $scope.globalrule.rule_match_type = undefined ; 	
   }
 
   function getConditionByKey(key) {
@@ -168,8 +187,8 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
   function getMatcherByKey(key) {
     for (var i = 0; i < $scope.form.vcl_matchers.length; i++) {
       if ($scope.form.vcl_matchers[i].key == key) return $scope.form.vcl_matchers[i];       
-  }
-  return undefined; 
+  	}
+    return undefined; 
   }
 
 }]);

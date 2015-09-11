@@ -10,9 +10,7 @@ angular.module('vclgenie').factory('Api', ['$http', function($http) {
    	 json.backends = []; 
    	 json.backends.push({ "name" : "backend1", "host" : "www.myhost.com", "host_header" : "www.myhost.com"});
 
-   	 return $http.post('/api/vcl',json).then(function(response) {
-        return response.data ; 
-   	 }); 
+   	 return $http.post('/api/vcl',json); 
    }
 
  } 
