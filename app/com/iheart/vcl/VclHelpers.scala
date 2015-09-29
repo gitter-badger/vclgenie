@@ -126,7 +126,7 @@ trait VCLHelpers {
 
      b.map(backend => generateBackend(backend))
 
-     addToVcl("set req.backend = " + b.head.name, vclRecv)
+     addToVcl("set req.backend = " + b.head.name + ";", vclRecv)
   }
 
   def toTTL(units: VclUnits) = units match {
@@ -146,13 +146,13 @@ trait VCLHelpers {
     case VclConfigAction.doNotCache => "set beresp.ttl = 0s; "
     case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";"
     case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;"
-    case VclConfigAction.denyRequest => "error 403;"
-    case VclConfigAction.removeReqHeader => "unset req.http." + ruleaction.value + ";"
-    case VclConfigAction.removeRespHeader => "unset resp.http." + ruleaction.value + ";"
-    case VclConfigAction.addReqHeader => "set req.http." + ruleaction.name + " = " + ruleaction.value + ";"
-    case VclConfigAction.addRespHeader => "set resp.http." + ruleaction.name + " = " + ruleaction.value + ";"
-    case VclConfigAction.remCookies if vclFunction == vclFetch =>  "unset beresp.http.cookie ;"
-    case VclConfigAction.remCookies if vclFunction == vclRecv =>  "unset resp.http.cookie;"
+    case VclConfigAction.denyRequest => addTabs(2) +"error 403;"
+    case VclConfigAction.removeReqHeader => addTabs(2) +"unset req.http." + ruleaction.value + ";"
+    case VclConfigAction.removeRespHeader => addTabs(2) +"unset resp.http." + ruleaction.value + ";"
+    case VclConfigAction.addReqHeader => addTabs(2) +"set req.http." + ruleaction.name.get + " = " + ruleaction.value.get + ";"
+    case VclConfigAction.addRespHeader => addTabs(2) + s"""set resp.http.${ruleaction.name.get} = "${ruleaction.value.get}" ;"""
+    case VclConfigAction.remCookies if vclFunction == vclFetch =>  addTabs(2) +"unset beresp.http.cookie ;"
+    case VclConfigAction.remCookies if vclFunction == vclRecv =>  addTabs(2) + "unset resp.http.cookie;"
     case VclConfigAction.setBackend => addTabs(2) + "set req.backend = " + ruleaction.name.get + ";"
     case _ => ""
   }
@@ -168,9 +168,9 @@ trait VCLHelpers {
       case DoesNotEqual => s"$field != $quoteChar$value$quoteChar"
       case Matches => s"$field ~ $quoteChar$value$quoteChar"
       case DoesNotMatch =>  s"$field !~ $quoteChar$value$quoteChar"
-//      case "greaterthan" => s"$field > $value"
-//      case "lessthan" => s"$field < $value"
-//      case "startswith" => s"$field ~ $quoteChar^$value$quoteChar"
+      case GreaterThen => s"$field > $value"
+      case LessThen => s"$field < $value"
+      case StartsWith => s"$field ~ $quoteChar^$value$quoteChar"
       case x => "UNKNOWN OP " + x
     }
   }
@@ -185,7 +185,7 @@ trait VCLHelpers {
       val contentTypes = rulecondition.value.split(",").map(u => u.trim).mkString("|")
       " ( " + opToText("req.http.ext",rulecondition.matcher.get,contentTypes) + " ) "
     case VclConfigCondition.clientIp => " ( " + opToText("client.ip",rulecondition.matcher.get, toAcl(rule),false) + " ) "
-    case VclConfigCondition.requestParam => " ( " + opToText("req.url",rulecondition.matcher.get,s"$rulecondition.conditionType.name=$rulecondition.value") + " ) "
+    case VclConfigCondition.requestParam => " ( " + opToText("req.url",rulecondition.matcher.get,s"${rulecondition.name.get}=${rulecondition.value}") + " ) "
     case VclConfigCondition.clientCookie =>
       val str = s"""header.get(req.http.cookie,"${rulecondition.name.get} = ${rulecondition.value}")"""
       " ( " + opToText(str,rulecondition.matcher.get,"^$") + " ) "
@@ -206,12 +206,12 @@ trait VCLHelpers {
 
     funcs.foreach { vclfunc =>
       var block = "\n"
-      block += addTabs(1) + "if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
+      block +=  addTabs(1) + " if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
       if (vclfunc == VclFunctionType.vclRecv)
-        block += addTabs(1) + s""" set req.backend = director_${ruleset} ; \n """
-      block += addTabs(1) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
-      block += addTabs(1) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
-      block += " }\n"
+        block += addTabs(2) + s"""set req.backend = director_${ruleset} ; \n """
+      block += addTabs(2) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
+      block += addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
+      block += addTabs(1) + " }\n"
       addToVcl(block,vclfunc)
     }
   }
@@ -257,80 +257,6 @@ trait VCLHelpers {
                   |    unset req.http.ext ;
                   |  }
                   |
-                  |  sub set_geoip {
-                  |    set req.http.X-GeoIP-Client = client.ip;
-                  |    set req.http.X-GeoIP = geoip.country(req.http.X-GeoIP-Client);
-                  |  }
-                  |
-                  |   sub validate_token_url {
-                  |
-                  |     set req.http.X-SS-Token = regsuball(req.url,".*[?&]ss_token=([^&]+).*","\\1");
-                  |     set req.http.X-SS-Expiration = regsuball(req.url,".*[?&]ss_expiration=([^&]+).*","\\1");
-                  |
-                  |     std.syslog(1,"EXPIRATION IS " + req.http.X-SS-Expiration);
-                  |
-                  |     set req.http.X-SS-Expiration2 = req.http.X-SS-Expiration;
-                  |     set req.http.X-SS-Token2 = req.http.X-SS-Token;
-                  |
-                  |     if (ssutil.time_expired(req.http.X-SS-Expiration) < 0) {
-                  |       error 403 "Token is expired" ;
-                  |     }
-                  |
-                  |     set req.url = regsuball(req.url,"\\?ss_token=[^&]+$",""); # strips when QS = "?sstoken=AAA"
-                  |     set req.url = regsuball(req.url,"\\?ss_token=[^&]+&","?"); # strips when QS = "?sstoken=AAA&foo=bar"
-                  |     set req.url = regsuball(req.url,"&ss_token=[^&]+",""); # strips when QS = "?foo=bar&sstoken=AAA" or QS = "?foo=bar&sstoken=AAA&bar=baz"
-                  |
-                  |     set req.url = regsuball(req.url,"\\?ss_expiration=[^&]+$",""); # strips when QS = "?sstoken=AAA"
-                  |     set req.url = regsuball(req.url,"\\?ss_expiration=[^&]+&","?"); # strips when QS = "?sstoken=AAA&foo=bar"
-                  |     set req.url = regsuball(req.url,"&ss_expiration=[^&]+",""); # strips when QS = "?foo=bar&sstoken=AAA" or QS = "?foo=bar&sstoken=AAA&bar=baz"
-                  |
-                  |     if (req.http.X-SS-Token != digest.hash_md5(req.http.X-SS-Key + digest.hash_md5(req.http.X-SS-Expiration + req.url + req.http.X-SS-Key ) )  ) {
-                  |        error 403 "Invalid Token";
-                  |      }
-                  |
-                  |     unset req.http.X-SS-Key ;
-                  |     unset req.http.X-SS-Token ;
-                  |     unset req.http.X-SS-Expiration ;
-                  |
-                  |  }
-                  |
-                  | sub validate_token_header {
-                  |
-                  |     if (ssutil.time_expired(req.http.X-SS-Expiration) < 0) {
-                  |       error 403 "Token is expired" ;
-                  |     }
-                  |
-                  |     set req.http.X-Debug-Token = digest.hash_md5(req.http.X-SS-Key + digest.hash_md5(req.http.X-SS-Expiration + req.url + req.http.X-SS-Key ) ) ;
-                  |     if (req.http.X-SS-Token != digest.hash_md5(req.http.X-SS-Key + digest.hash_md5(req.http.X-SS-Expiration + req.url + req.http.X-SS-Key ) ) ) {
-                  |        error 403 "Invalid Token in Header";
-                  |     }
-                  |
-                  |     unset req.http.X-SS-Key ;
-                  |     unset req.http.X-SS-Token ;
-                  |     unset req.http.X-SS-Expiration ;
-                  |
-                  |  }
-                  |
-                  |  sub validate_token_cookie {
-                  |
-                  |     set req.http.X-SS-Token = regsub( req.http.Cookie, "^.*?ss_token=([^;]*);*.*$", "\1" );
-                  |     set req.http.X-SS-Expiration = regsub( req.http.Cookie, "^.*?ss_expiration=([^;]*);*.*$", "\1" );
-                  |
-                  |     unset req.http.Cookie ;
-                  |
-                  |     if (ssutil.time_expired(req.http.X-SS-Expiration) < 0) {
-                  |       error 403 "Token is expired" ;
-                  |     }
-                  |
-                  |     if (req.http.X-SS-Token != digest.hash_md5(req.http.X-SS-Key + digest.hash_md5(req.http.X-SS-Expiration + req.url + req.http.X-SS-Key ) ) ) {
-                  |        error 403 "Invalid Token in Cookie";
-                  |     }
-                  |
-                  |     unset req.http.X-SS-Key;
-                  |     unset req.http.X-SS-Token;
-                  |     unset req.http.X-SS-Expiration;
-                  |
-                  |  }
                   |
 
                   |"""
@@ -366,22 +292,10 @@ trait VCLHelpers {
       |#------------------------
       |sub vcl_recv {
       |
-      |   # This is completely lame and just so the VCL compiler
-      |   # doesnt bitch at unused functions
-      |   if (false) {
-      |    call validate_token_header;
-      |    call validate_token_url;
-      |    call validate_token_cookie;
-      |    call set_geoip;
-      |   }
       |
-      |   set req.http.ext = regsub( req.url, "\\?.+$", "" );
-      |   set req.http.ext = regsub( req.http.ext, ".+\\.([a-zA-Z0-9]+)$", "\\1" );
+      |     set req.http.ext = regsub( req.url, "\\?.+$", "" );
+      |     set req.http.ext = regsub( req.http.ext, ".+\\.([a-zA-Z0-9]+)$", "\\1" );
       |
-      |   if (req.http.host ~ "#{$CNAME_TYPE[:test]}$") {
-      |    set req.http.host = regsub(req.http.host,"^(.*)?\.#{$CNAME_TYPE[:test]}","\\1");
-      |   }
-
     """.stripMargin
 
   vclErrorStr =

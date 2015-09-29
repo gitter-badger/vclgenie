@@ -11,8 +11,8 @@ case class VclCondition( key: String,
 
 object VclConfigCondition {
 
-  val requestUrl = VclCondition("request_url","Request Url", ValCond,Seq(Matches,DoesNotMatch))
-  val contentType = VclCondition("content_type","Content Type", ValCond, Seq(Matches,DoesNotMatch))
+  val requestUrl = VclCondition("request_url","Request Url", ValCond,Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
+  val contentType = VclCondition("content_type","Content Type", ValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
   val clientIp = VclCondition("client_ip","Client IP/Network", ValCond, Seq(Matches, DoesNotMatch))
   val requestParam = VclCondition("request_param","Request Parameter", NameValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
   val clientCookie = VclCondition("cookie","Cookie", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))

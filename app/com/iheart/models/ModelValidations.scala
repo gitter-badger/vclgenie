@@ -75,8 +75,8 @@ trait ModelValidations extends ModelHelpers {
   def validateValAction(actions: Seq[RuleAction]) =
     (actions.count(a => a.action.actionType == ValAction && a.value.isEmpty) == 0).toValidate("actions of type ValAction must have a name")
 
-  def validateBoolAction(actions: Seq[RuleAction]) =
-    (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (!a.value.getOrElse("").asInt.contains(0) && !a.value.getOrElse("").asInt.contains(1)))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
+//  def validateBoolAction(actions: Seq[RuleAction]) =
+//    (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (!a.value.getOrElse("").asInt.contains(0) && !a.value.getOrElse("").asInt.contains(1)))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
 
   def validateUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
 

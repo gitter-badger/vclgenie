@@ -5,6 +5,8 @@ import com.iheart.models.VclConfigAction._
 
 object VclUtils {
 
+  def generateUUID = java.util.UUID.randomUUID.toString.replaceAll("-","_")
+
   object VclUnits extends Enumeration {
     type VclUnits = Value
     val SECONDS, MINUTES, HOURS, DAYS, WEEKS, YEARS = Value
@@ -33,7 +35,7 @@ object VclUtils {
 
   object VclMatchers extends Enumeration {
     type VclMatchers = Value
-    val Matches, DoesNotMatch, Equals, DoesNotEqual = Value
+    val Matches, DoesNotMatch, Equals, DoesNotEqual, GreaterThen, LessThen, StartsWith = Value
   }
 
   object VclMatchType extends Enumeration {
@@ -53,14 +55,20 @@ object VclUtils {
     "matches" -> (Matches,"Matches"),
     "does_not_match" -> (DoesNotMatch,"Does Not Match"),
     "equals" -> (Equals,"Equals"),
-    "does_not_equal" -> (DoesNotEqual,"Does Not Equal")
+    "does_not_equal" -> (DoesNotEqual,"Does Not Equal"),
+    "greater_then" -> (GreaterThen, "Greater Then"),
+    "less_then" -> (LessThen, "Less Then"),
+    "starts_with" -> (StartsWith, "Starts With")
   )
 
   val vclMatcherReverseMap = Map(
      Matches -> "matches",
      DoesNotMatch -> "does_not_match",
      Equals -> "equals",
-     DoesNotEqual -> "does_not_equal"
+     DoesNotEqual -> "does_not_equal",
+     GreaterThen -> "greater_then",
+     LessThen -> "less_then",
+     StartsWith -> "starts_with"
   )
 
   val vclUnitMap = Map(

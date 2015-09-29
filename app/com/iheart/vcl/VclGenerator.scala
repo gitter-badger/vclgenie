@@ -3,6 +3,7 @@ package com.iheart.vcl
 import com.iheart.models.{Backend, Hostname, VclConfigCondition, Rule}
 import com.iheart.util.VclUtils.VclFunctionType._
 import com.iheart.util.VclUtils.VclMatchType
+import com.iheart.util.VclUtils._
 import play.Logger
 
 
@@ -10,7 +11,7 @@ class VclGenerator extends VCLHelpers {
 
 
   def parseGlobalRule(rule: Rule, vclFunction: VclFunctionType) = {
-    val actions = rule.actions.map { action =>
+    val actions = rule.actions.filter(a => a.action.vclFunctions.contains(vclFunction)).map { action =>
       vclAction(action,vclFunction)
     }
 
@@ -84,7 +85,8 @@ class VclGenerator extends VCLHelpers {
                       orderedRules: Seq[Rule],
                       globalRules: Seq[Rule],
                       backends: Seq[Backend],
-                      ruleset: String = java.util.UUID.randomUUID.toString): String = {
+                      ruleset: String = generateUUID): String = {
+    globalConfig = baseVcl
     generateAcl(orderedRules ++ globalRules)
     generateBackends(backends)
     generateHostConditions(hostnames,ruleset)

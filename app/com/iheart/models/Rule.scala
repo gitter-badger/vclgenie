@@ -3,6 +3,7 @@ package com.iheart.models
 import com.iheart.json.Formats._
 import com.iheart.models.VclConfigCondition._
 import com.iheart.models.VclConfigAction._
+import com.iheart.util.VclUtils._
 import com.iheart.util.VclUtils.VclFunctionType.VclFunctionType
 import com.iheart.util.VclUtils.VclMatchType
 import com.iheart.util.VclUtils.VclMatchType
@@ -13,7 +14,7 @@ case class Rule(conditions: Seq[RuleCondition],
                 actions: Seq[RuleAction],
                 matchType: VclMatchType,
                 index: Option[Int] ,
-                id: String = java.util.UUID.randomUUID.toString) {
+                id: String = generateUUID) {
 
   def needsAcl = this.conditions.count(c => c.condition == clientIp) > 0
 
@@ -43,8 +44,7 @@ object Rule extends ModelValidations {
                   validateSingleAction(actions.map(_.right.get)),
                   validateNameValAction(actions.map(_.right.get)),
                   validateNameValCondition(conditions.map(_.right.get)),
-                  validateValAction(actions.map(_.right.get)),
-                  validateBoolAction(actions.map(_.right.get))) ) match {
+                  validateValAction(actions.map(_.right.get))) ) match {
         case Left(x) => Logger.info("error with rule: " + x.toString()); Left(RuleError(x))
         case Right(y) => Right (Rule(conditions.map (_.right.get), actions.map (_.right.get), VclMatchType.fromString(matchType), index) )
       }

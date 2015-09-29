@@ -35,6 +35,7 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
  
   $scope.addHost = function() {
+    console.log("Adding hostname : " + $scope.ruleset.hostname); 
   	$scope.ruleset.hostnames.push({"hostname" : $scope.ruleset.hostname});
   }
 

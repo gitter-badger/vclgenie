@@ -13,7 +13,7 @@
       </div>
       <div class="col-md-4">Hostnames:<br/>
          <div ng-repeat="host in ruleset.hostnames">
-           <br/>{{host}} <a href ng-click="removeHost($index)">Remove</a>
+           <br/>{{host.hostname}} <a href ng-click="removeHost($index)">Remove</a>
         </div>
       </div>
     </tab>
@@ -115,7 +115,7 @@
         <div class="form-group">
         <label class="control-label col-sm-2">Name  </label> 
         <div class="col-sm-10">
-            <input class="form-control" type=text ng-model="globalrule.action[$index].name">
+            <input class="form-control" type=text ng-model="globalrule.actions[$index].name">
         </div>
        </div>
       </span>

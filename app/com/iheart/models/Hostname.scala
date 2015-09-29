@@ -1,7 +1,8 @@
 package com.iheart.models
 
+import com.iheart.util.VclUtils._
 
-case class Hostname(name: String, id: String = java.util.UUID.randomUUID.toString )
+case class Hostname(name: String, id: String = generateUUID )
 
 object Hostname {
   def build(h: String): Either[HostnameError,Hostname] = {

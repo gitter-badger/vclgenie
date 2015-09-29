@@ -18,7 +18,7 @@ object VclConfigAction {
   val removeReqHeader = VclAction("remove_request_header","Remove Request Header", ValAction, Seq(vclRecv))
   val removeRespHeader = VclAction("remove_response_header","Remove Response Header", ValAction, Seq(vclFetch))
   val addReqHeader = VclAction("add_request_header","Add Request Header", NameValAction, Seq(vclRecv))
-  val addRespHeader = VclAction("add_response_header","Add Response Header", NameValAction, Seq(vclFetch))
+  val addRespHeader = VclAction("add_response_header","Add Response Header", NameValAction, Seq(vclDeliver))
   val setBackend = VclAction("set_backend","Set backend", ValAction,Seq(vclRecv,vclFetch))
 
   val actionMap = Map(
