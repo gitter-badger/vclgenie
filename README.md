@@ -4,7 +4,7 @@ VclGenie is an API (with an angular frontend if desired) to essentially turn a J
 
 #API
 
-See the tests for examples of the JSON API.  The format of the JSON API is roughly somethign like this: 
+See the tests for examples of the JSON API.  The format of the JSON API is roughly something like this: 
 
 ```
      {
@@ -50,7 +50,7 @@ If you would like to see the restrictions, check out ModelValidations.scala for 
 
 ###Conditions 
 
-The currently support list of conditions are 
+The currently supported list of conditions are 
 
 * Request URL  - Match on anything in the URL 
 * Content Type - Match on the Content Type header
@@ -104,7 +104,7 @@ As a quick example, if I was going to add 2 conditions, one for request url and 
 
 ### Actions
 
-Actions are setup almost identically to Conditions, but have a slightly different set of types.  Additionally, we map every action to the VCL function that it maps to, although knowledge of this is not necessary and is automatically managed in the backend API.
+Actions are setup almost identically to Conditions, but have a slightly different set of types.  Additionally, we map every action to the VCL function that it needs, although knowledge of this is not necessary and is automatically managed in the backend API (Check VCLHelpers.scala if interested).
 
 The currently supported list of actions are 
 
@@ -121,7 +121,7 @@ The currently supported list of actions are
 * Set Backend - Set the request to use a different backend (see BACKENDS)
 
 
-The below table outslines what is required in the JSON.  The "key" field is the value of the action in the JSON, and there is an X in the conditions that require either name, value or units. NOTE, in some cases (like Do Not Cache), neither name, value or units fields are required since its a simple Boolean action type, meaning no value is needed, and just by using that key, the intent is known (issue a 403, for example).
+The below table outlines what is required in the JSON.  The "key" field is the value of the action in the JSON, and there is an X in the conditions that require either name, value or units. NOTE, in some cases (like Do Not Cache), neither name, value or units fields are required since its a simple Boolean action type, meaning no value is needed, and just by using that key, the intent is known (issue a 403, for example).
 
 ----
 
@@ -179,3 +179,31 @@ There is a required field for each rule called "match_type".  The only 2 support
 
 ### Index
 Ordered rules require an index so that we can programatically order the rule conditions in VCL.  If you do not specify an "index" field in the ordered_rules block for each rule , you will get an error.  
+
+### FrontEnd 
+There is an included AngularJS app in the frontend/ directory for a simple (very simple) UI.  Its not designed, but it should be relatively functional for a quicker, more visual way to create rules/conditions.
+
+If you would like to run the angular app and the API locally you can reference the following nginx snippet to get it working
+
+```
+    server {
+       listen 80;
+
+       server_name your.server.name ;
+
+       root /path/to/vclgenie/frontend/app;
+
+       location / {
+        index index.html ;
+       }
+
+       location /bower_components/ {
+          root /path/to/vclgenie/frontend/ ;
+        }
+
+       location /api/ {
+          proxy_pass http://localhost:9000/ ;
+       }
+
+     }
+```   
