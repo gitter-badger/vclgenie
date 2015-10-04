@@ -4,37 +4,39 @@ VclGenie is an API (with an angular frontend if desired) to essentially turn a J
 
 #API
 
-See the tests for examples of the JSON API.  The format of the JSON API is  
+See the tests for examples of the JSON API.  The format of the JSON API is roughly somethign like this: 
 
->     {
->   	 "ordered_rules" :
->                     [
->                        {
->                           "conditions" : [ ],
->                           "actions" : [ ],
->                           "match_type" : "ANY | ALL",
->                           "index" : 
->                        },                       
->                      ],
-> 
->       "global_rules" : [
->                         {
->                           "conditions" : [ ],
->                           "actions" : [ ],
->                           "match_type" : "ANY | ALL",
->                         },                       
-> 		                ],                                   
->       "hostnames" :
->                    [ 
->                       { 
->                          "hostname" : }, 
->                    ] ,
->       "backends" : [ 
->                      { "name" : "backend1" , 
->                        "host" : "www.myhost.com",                                                              							"host_header" : "www.myhost.com"
->                       } 
->                    ]
->   	 }
+```
+     {
+   	 "ordered_rules" :
+                     [
+                        {
+                           "conditions" : [ ],
+                           "actions" : [ ],
+                           "match_type" : "ANY | ALL",
+                           "index" : 
+                        },                       
+                      ],
+ 
+       "global_rules" : [
+                         {
+                           "conditions" : [ ],
+                           "actions" : [ ],
+                           "match_type" : "ANY | ALL",
+                         },                       
+ 		                ],                                   
+       "hostnames" :   [ 
+                         { "hostname" : "www.example1.com" },
+                         { "hostname" : "www.example2.com" }
+                       ] ,
+       "backends" : [ 
+                      { "name" : "backend1" , 
+                        "host" : "www.myhost.com",                                                              						 "host_header" : "www.myhost.com",
+                        "port" : 80 
+                       } 
+                    ]
+   	 }
+```   	 
 
 #Rules
 
@@ -72,8 +74,108 @@ The below table outlines what is required in the JSON.  The "key" field is the v
 
  The format of the condition in the JSON API is 
 
-    { "condition" : key, 
-      "name" : "somename",
-      "value" : "somevalue",
-      "matcher" : "equals | does_not_equal | matches | does_not_match" 
-    }
+```
+"conditions" : [ 
+      { "condition" : key, 
+       "name" : "somename",
+       "value" : "somevalue",
+       "matcher" : "equals | does_not_equal | matches | does_not_match" 
+      }
+ ]
+``` 
+
+As a quick example, if I was going to add 2 conditions, one for request url and one for request param, the conditions block in the JSON could look like this 
+
+```
+"conditions" : [ 
+      { 
+       "condition" : "request_url", 
+       "value" : "/somepath",
+       "matcher" : "equals" 
+      },
+      {
+        "condition" : "request_param",
+        "name" : "source",
+        "value" : "rssfeed",
+        "matcher" : "does_not_equal"
+      }
+ ]
+```
+
+### Actions
+
+Actions are setup almost identically to Conditions, but have a slightly different set of types.  Additionally, we map every action to the VCL function that it maps to, although knowledge of this is not necessary and is automatically managed in the backend API.
+
+The currently supported list of actions are 
+
+* Do Not Cache - Set TTL to 0 
+* Set TTL - Set TTL to a specified value
+* HTTP Redirect - Issue a 302 redirect
+* Add Cookie - Add a Response Cookie
+* Remove Cookies - Remove Cookies from the request and backend response
+* Deny Request - Issue a 403 forbidden 
+* Remove Request Header - Remove a header from the request
+* Remove Response Header - Remove a response header from the origin
+* Add Request Header - Add an HTTP Request header to the backend request
+* Add Response Header - Add an HTTP request header to the client response
+* Set Backend - Set the request to use a different backend (see BACKENDS)
+
+
+The below table outslines what is required in the JSON.  The "key" field is the value of the action in the JSON, and there is an X in the conditions that require either name, value or units. NOTE, in some cases (like Do Not Cache), neither name, value or units fields are required since its a simple Boolean action type, meaning no value is needed, and just by using that key, the intent is known (issue a 403, for example).
+
+----
+
+NOTE: *In addition to simple name, value , actions can contain an extra type called "units".  Currently this is only for set_ttl, but i am sure further uses can be found.  The only supported values for the "units" field are SECONDS, MINUTES, HOURS, DAYS, WEEKS, YEARS.*
+
+----
+
+| Action        | key         | name   | value    | units  |
+|---------------|-------------|:------:|:--------:|:------:|
+|Do Not Cache   | do_not_cache|        |          |        |
+|Set TTL        | set_ttl     |        |   x      |   x    |
+|HTTP Redirect  | http_redirect |      |   x      |        |
+|Add Cookie     | add_cookie  |  x     |   x      |        |
+|Remove Cookies | remove_cookie|       |          |        |
+|Deny Request   | deny_request |       |          |        |
+|Remove Req Header| remove_req_header|  |   x     |        |
+|Remove Resp Header| remove_resp_header | | x     |        |
+|Add Req Header | add_request_header | x |  x     |        |
+|Add Resp Header| add_response_header | x | x     |        |
+|Set Backend | set_backend |  | x |  | 
+
+Using another action example, if we wanted to use 2 actions, Set TTL, and add Response Header, the JSON could look like this 
+
+```
+  "actions" : [
+     { 
+       "action" : "set_ttl",
+       "value" : 300 ,
+       "units" : "SECONDS"
+     },
+     {
+       "action" : "add_response_header",
+       "name" : "X-HTTP-MyHeader",
+       "value" : "customData"
+     }
+  ]
+```
+
+
+### Hostnames
+
+  Hostnames right now are pretty simple. We simply OR all the hostnames provided.  In a future release we may provide more per host granularity in terms of which rules get bound to each hostname.  For right now, its pretty basic.
+  
+  The API required field for hostnames is "hostname". Thats it :) 
+  
+### Backends
+
+  VCL requires at least one backend, so we do as well.  We also let you name your backend, so you can reference it in your actions.  For example, you can set 2 backends (we use the first as the default in vcl_recv) and then in an action rule later on, you can set a different backend (by name) based on a rule.  
+  
+  The required fields for backends is "host" and "host_header".  The optional field is port (defaults to 80).
+  
+### MatchType
+
+There is a required field for each rule called "match_type".  The only 2 supported values are ANY or ALL.  ANY means that we OR (||) the conditions together and ALL means we AND (&&) the conditions together before executing rule actions.
+
+### Index
+Ordered rules require an index so that we can programatically order the rule conditions in VCL.  If you do not specify an "index" field in the ordered_rules block for each rule , you will get an error.  
