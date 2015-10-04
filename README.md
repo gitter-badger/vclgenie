@@ -58,3 +58,22 @@ The currently support list of conditions are
 * Request Header - Match on an HTTP Request header
 * File Extension - Match on the file extension of the request 
 
+The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.  The matcher column outlines which matchers are supported.  
+
+| Condition     | key         | name   | value    | 
+|---------------|-------------|:------:|:--------:|
+|Request Url    | request_url |        |  x       |
+|Content Type   | content_type |       |  x       |
+|Client IP      | client_ip    |       |  x       |
+|Request Param  | request_param | x    |  x       |
+|Cookie         | client_cookie | x    |  x       |
+|Request Header | request_header | x   |  x       |
+|File Extension | file_extension | x   |  x       |
+
+ The format of the condition in the JSON API is 
+
+    { "condition" : key, 
+      "name" : "somename",
+      "value" : "somevalue",
+      "matcher" : "equals | does_not_equal | matches | does_not_match" 
+    }
