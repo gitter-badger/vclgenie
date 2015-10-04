@@ -58,7 +58,7 @@ The currently support list of conditions are
 * Request Header - Match on an HTTP Request header
 * File Extension - Match on the file extension of the request 
 
-The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.  The matcher column outlines which matchers are supported.  
+The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.    
 
 | Condition     | key         | name   | value    | 
 |---------------|-------------|:------:|:--------:|
