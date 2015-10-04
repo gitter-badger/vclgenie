@@ -21,6 +21,7 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
     $scope.ruleset.global_rules = [] ; 
     $scope.ruleset.ordered_rules = []; 
     $scope.ruleset.hostnames = []; 
+    $scope.ruleset.backends = []; 
 
     $scope.form = {} ; 
     $scope.form.conditions = data.conditions ; 
@@ -29,20 +30,47 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
     $scope.globalconditions = []; 
 
+    $scope.vcl = {}; 
+
 
   }).error(function(error) { 
   });
 
  
+  //------------------------
+  // Hostname Functions
+  //-------------------------
   $scope.addHost = function() {
-    console.log("Adding hostname : " + $scope.ruleset.hostname); 
   	$scope.ruleset.hostnames.push({"hostname" : $scope.ruleset.hostname});
+    $scope.ruleset.hostname = undefined; 
   }
 
   $scope.removeHost = function(idx) {
   	$scope.ruleset.hostnames.splice(idx,1);
   }
 
+  //-------------------------
+  // Backend Functions
+  //---------------------------
+  $scope.addBackend = function() { 
+    if ($scope.ruleset.backend_header == undefined) 
+      $scope.ruleset.backend_header = $scope.ruleset.backend_host ; 
+
+    $scope.ruleset.backends.push({"name" : $scope.ruleset.backend_name, "host" : $scope.ruleset.backend_host, "host_header" : $scope.ruleset.backend_header});
+
+    $scope.ruleset.backend_name = undefined ; 
+    $scope.ruleset.backend_host = undefined ; 
+    $scope.ruleset.backend_header = undefined ; 
+
+  }
+
+  $scope.removeBackend = function(idx) { 
+    $scope.ruleset.backends.splice(idx,1); 
+  }
+
+  //---------------------------------
+  // View conditions
+  //---------------------------------
   $scope.isNameValCond = function(cond) {
     var c = getConditionByKey(cond); 
 
@@ -91,11 +119,9 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
   	if (rule_type == 'global') {
   	   $scope.currentGlobalAction = action ; 
-      // if (action.action_type == 'Bool')  $scope.globalrule.actions[idx].value = "1" ; 
     }
   	else if (rule_type == 'ordered') {
   		$scope.currentOrderedAction = action ; 
-     // if (action.action_type == 'Bool') $scope.orderedrule.actions[idx].value = "1"; 
     }
   }
 
@@ -106,21 +132,40 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
       $scope.orderedrule.actions.push({});
   }
 
+
+  //-------------------------
+  // Rule Functions
+  //-------------------------
   $scope.addGlobalRule = function() {
   	var rule = {} ;
-  	console.log("RULE MATCH TYPE : " ); console.log($scope.globalrule.rule_match_type); 
 
   	rule.conditions = $scope.globalrule.conditions ; 
     rule.actions = $scope.globalrule.actions ; 
   	rule.match_type = $scope.globalrule.rule_match_type ; 
 
   	$scope.ruleset.global_rules.push(rule); 
+
     resetGlobalCondition(); 
-    console.log("GLOBAL RULES:"); console.log($scope.ruleset.global_rules); 
+  }
+
+  $scope.addOrderedRule = function() {
+    var rule = {};
+
+    rule.conditions = $scope.orderedrule.conditions;
+    rule.actions = $scope.orderedrule.actions; 
+    rule.match_type = $scope.orderedrule.rule_match_type; 
+
+    $scope.ruleset.ordered_rules.push(rule);
+
+    resetOrderedCondition(); 
   }
 
   $scope.removeGlobalRule = function(idx) {
   	$scope.ruleset.global_rules.splice(idx,1); 
+  }
+
+  $scope.removeOrderedRule = function(idx) { 
+    $scope.ruleset.ordered_rules.splice(idx,1); 
   }
 
 
@@ -156,19 +201,54 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
       return 'col-sm-10';
   }
 
+
+  //----------------------
+  // Generate VCL 
+  //----------------------
+  function addIndexToRules(rules) {
+    var withIndex = []; 
+
+    for(var i =0 ; i < rules.length; i++) {
+      withIndex[i] = rules[i] ; 
+      withIndex[i].index = i ; 
+    }
+    return withIndex ; 
+  }
+
   $scope.generateVcl = function() {
-  	 Api.generate($scope.ruleset.hostnames, [], $scope.ruleset.global_rules ).then(
-      function(response) {  $scope.vcl = response.data ; },
-      function(error) { $scope.errors = error.data ; }
+     $scope.vcl.errors = ''; 
+     $scope.vcl.output = 'Loading VCL........'; 
+
+     var ordered = addIndexToRules($scope.ruleset.ordered_rules);
+
+     console.log(ordered);
+
+  	 Api.generate($scope.ruleset.hostnames, ordered, $scope.ruleset.global_rules, $scope.ruleset.backends  ).then(
+      function(response) {  $scope.vcl.output = response.data ; },
+      function(error) { 
+        $scope.vcl.errors = error.data.errors ; 
+        $scope.vcl.output = 'Error generating VCL';
+      }
      )
   }
 
+  //------------------------------
+  // Private Methods 
+  //------------------------------
   function resetGlobalCondition() {
   	$scope.currentGlobalCondition = undefined ; 
     $scope.currentGlobalAction = undefined ; 
   	$scope.globalrule.conditions = []; 
     $scope.globalrule.actions = [];  
     $scope.globalrule.rule_match_type = undefined ; 	
+  }
+
+   function resetOrderedCondition() {
+    $scope.currentOrderedCondition = undefined ; 
+    $scope.currentOrderedAction = undefined ; 
+    $scope.orderedrule.conditions = []; 
+    $scope.orderedrule.actions = [];  
+    $scope.orderedrule.rule_match_type = undefined ;   
   }
 
   function getConditionByKey(key) {
@@ -191,5 +271,10 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
   	}
     return undefined; 
   }
+
+   $scope.sortableOptions = {
+    containment: '#sortable-container'
+  };
+
 
 }]);

@@ -35,7 +35,6 @@ trait BaseController {
 
   implicit class successOkClass(str: String) {
     def successF = Future {
-      Logger.info("Sending OK")
       Ok(str)
     }
   }
@@ -88,7 +87,6 @@ trait BaseController {
         case false => Seq()
         case true => request.orderedRules.filter(res => res.isRight).map(res => res.right.get)
       }
-     // req.get.orderedRules.filter(res => res.isRight).map(res => res.right.get)
 
     def toGlobalRules =
       req.get.isRight match {

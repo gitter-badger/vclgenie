@@ -15,9 +15,9 @@ object VclRequest extends ModelValidations {
             orderedRules: Seq[Either[RuleError,Rule]],
             globalRules: Seq[Either[RuleError,Rule]],
             backends: Seq[Either[BackendError,Backend]]): Either[RequestError,VclRequest] = {
-    isValid(Seq(hasIndex(orderedRules), validateBackendAction(orderedRules ++ globalRules, backends)) ) match {
+    isValid(Seq(hasIndex(orderedRules), validateBackendExists(backends), validateBackendAction(orderedRules ++ globalRules, backends)) ) match {
       case Left(x) => Logger.info("Request is invalid, returning " + x); Left(RequestError(x))
-      case Right(y) => Logger.info("Request is valid, returning:" +y); Right(VclRequest(hostnames,orderedRules,globalRules,backends))
+      case Right(y) => Right(VclRequest(hostnames,orderedRules,globalRules,backends))
     }
   }
 }

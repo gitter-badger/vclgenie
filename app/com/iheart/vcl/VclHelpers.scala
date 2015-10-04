@@ -71,47 +71,6 @@ trait VCLHelpers {
     }
   }
 
-  //***************************************************************************
-  // BACKEND/DIRECTOR FUNCTIONS
-  //***************************************************************************
-
-//  def printRRDirector(h: Hostname)(backends: List[String]) = {
-//    globalConfig += "director director_" + h._id.stringify + " round-robin {" + "\n"
-//    backends.map { b =>
-//      globalConfig += addTabs(1) + "{ .backend = " + b + " ;} \n"
-//    }
-//    globalConfig += "}\n\n"
-//  }
-//
-//  def printBackend(backend: String, ip: String, h: Hostname) = {
-//    globalConfig += "backend " + backend + " { \n"
-//    globalConfig += addTabs(1) + ".host = \"" + ip + "\" ;\n"
-//    globalConfig += addTabs(1) + ".host_header = \"" + h.name + "\" ; \n"
-//    globalConfig += addTabs(1) + ".port = \"80\"; \n"
-//    globalConfig += addTabs(1) + ".probe = healthcheck; \n\n"
-//    globalConfig += "}\n\n"
-//  }
-//
-//
-//  def backendName(h: Hostname, ip: String) = "backend_" + h._id.stringify + "_" + ip.replace(".","_")
-//
-//  def generateBackend(h: Hostname): Unit = {
-//
-//    Logger.info("Printing backend for hostname" + h.name)
-//    val printRR = printRRDirector(h) _
-//
-//    def backAcc(ips: List[String], backends: List[String]): List[String] = ips match {
-//      case Nil => backends
-//      case _ => {
-//        printBackend(backendName(h,ips.head),ips.head,h)
-//        backAcc(ips.tail,backends :+ backendName(h,ips.head))
-//      }
-//    }
-//
-//    addComment(1, "HOSTNAME " + h.name)
-//    printRR(backAcc(h.validOriginIps,List()))
-//  }
-
 
   def generateBackends(b: Seq[Backend]) = {
       def generateBackend(backend: Backend) = {
@@ -134,6 +93,7 @@ trait VCLHelpers {
     case VclUnits.HOURS => "h"
     case VclUnits.MINUTES => "m"
     case VclUnits.SECONDS => "s"
+    case VclUnits.YEARS => "y"
   }
 
   def toNetwork(s: String) = s match {
@@ -147,18 +107,18 @@ trait VCLHelpers {
     case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";"
     case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;"
     case VclConfigAction.denyRequest => addTabs(2) +"error 403;"
-    case VclConfigAction.removeReqHeader => addTabs(2) +"unset req.http." + ruleaction.value + ";"
-    case VclConfigAction.removeRespHeader => addTabs(2) +"unset resp.http." + ruleaction.value + ";"
+    case VclConfigAction.removeReqHeader => addTabs(2) +"unset req.http." + ruleaction.value.get + ";"
+    case VclConfigAction.removeRespHeader => addTabs(2) +"unset resp.http." + ruleaction.value.get + ";"
     case VclConfigAction.addReqHeader => addTabs(2) +"set req.http." + ruleaction.name.get + " = " + ruleaction.value.get + ";"
     case VclConfigAction.addRespHeader => addTabs(2) + s"""set resp.http.${ruleaction.name.get} = "${ruleaction.value.get}" ;"""
     case VclConfigAction.remCookies if vclFunction == vclFetch =>  addTabs(2) +"unset beresp.http.cookie ;"
     case VclConfigAction.remCookies if vclFunction == vclRecv =>  addTabs(2) + "unset resp.http.cookie;"
-    case VclConfigAction.setBackend => addTabs(2) + "set req.backend = " + ruleaction.name.get + ";"
+    case VclConfigAction.setBackend => addTabs(2) + "set req.backend = " + ruleaction.value.get + ";"
     case _ => ""
   }
 
   def opToText(field: String, op: VclMatchers, value: String, quotes: Boolean = true ) =  {
-    val quoteChar = if (quotes == true)
+    val quoteChar = if (quotes)
       "\""
     else
       ""
@@ -183,7 +143,7 @@ trait VCLHelpers {
       " ( " + opToText("req.url",rulecondition.matcher.get,urls) + " ) "
     case VclConfigCondition.contentType =>
       val contentTypes = rulecondition.value.split(",").map(u => u.trim).mkString("|")
-      " ( " + opToText("req.http.ext",rulecondition.matcher.get,contentTypes) + " ) "
+      " ( " + opToText("req.http.Content-Type",rulecondition.matcher.get,contentTypes) + " ) "
     case VclConfigCondition.clientIp => " ( " + opToText("client.ip",rulecondition.matcher.get, toAcl(rule),false) + " ) "
     case VclConfigCondition.requestParam => " ( " + opToText("req.url",rulecondition.matcher.get,s"${rulecondition.name.get}=${rulecondition.value}") + " ) "
     case VclConfigCondition.clientCookie =>
@@ -191,10 +151,8 @@ trait VCLHelpers {
       " ( " + opToText(str,rulecondition.matcher.get,"^$") + " ) "
     case VclConfigCondition.requestHeader =>
       " ( " + opToText("req.http." + rulecondition.name.get, rulecondition.matcher.get, rulecondition.value) + " ) "
-    //case "country" => " ( " + opToText("req.http.X-GeoIP", rulecondition.matcher, rulecondition.value) + " ) "
+    case VclConfigCondition.fileExtension => " ( " + opToText("req.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
   }
-
-
 
 
  // ****************************************************
@@ -207,8 +165,6 @@ trait VCLHelpers {
     funcs.foreach { vclfunc =>
       var block = "\n"
       block +=  addTabs(1) + " if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
-      if (vclfunc == VclFunctionType.vclRecv)
-        block += addTabs(2) + s"""set req.backend = director_${ruleset} ; \n """
       block += addTabs(2) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
       block += addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
       block += addTabs(1) + " }\n"

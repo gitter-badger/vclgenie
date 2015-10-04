@@ -33,7 +33,7 @@ class VclController extends Controller with BaseController {
           val v = new VclGenerator
           v.generateRuleset(hostnames,orules, grules,backends).successF
          //valid json but validation errors.  We need to lift all the BaseErrors
-        case false => Logger.info("Sending back error");  success.errorJF
+        case false =>  success.errorJF
       }
       //invalid JSON
       case e: JsError =>  e.errorJF

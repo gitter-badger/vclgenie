@@ -148,7 +148,7 @@ trait JsonData {
                                            { "action" : "http_redirect", "value" : "http://www.google.com" },
                                            { "action" : "http_redirect", "value" : "http://www.google.com" }
                                                       ],
-                                          "match_type" : "BADVAL",
+                                          "match_type" : "ANY",
                                           "index" : 2
                                         },
 
@@ -239,7 +239,7 @@ trait JsonData {
                                          "actions" : [
                                            { "action" : "remove_cookies", "value" : "somecookie" }
                                                       ],
-                                          "match_type" : "BADVAL",
+                                          "match_type" : "ALL",
                                           "index" : 2
                                         },
 
@@ -284,7 +284,7 @@ trait JsonData {
                                          "actions" : [
                                            { "action" : "remove_cookies", "value" : "somecookie" }
                                                       ],
-                                          "match_type" : "BADVAL",
+                                          "match_type" : "ANY",
                                           "index" : 2
                                         },
 
@@ -329,7 +329,7 @@ trait JsonData {
                                          "actions" : [
                                            { "action" : "remove_cookies", "value" : "somecookie" }
                                                       ],
-                                          "match_type" : "BADVAL",
+                                          "match_type" : "ANY",
                                           "index" : 2
                                         },
 
@@ -337,7 +337,7 @@ trait JsonData {
                                           "conditions" : [ { "condition" : "request_url", "matcher" : "matches", "value" : "/home" },
                                                            { "condition" : "request_header", "matcher" : "matches", "value" : "someheadervalue", "name" : "X-HTTP-Something"}],
                                           "actions" : [ { "action" : "set_ttl", "value" : "300", "units" : "SECONDS" },
-                                                        { "action" : "set_backend", "name" : "backend2" }
+                                                        { "action" : "set_backend", "value" : "backend2" }
                                                       ],
                                           "match_type" : "ANY",
                                           "index" : 1
@@ -349,7 +349,7 @@ trait JsonData {
                                           "conditions" : [ { "condition" : "request_header", "matcher" : "equals", "value" : "globalvalue", "name" : "X-HTTP-Test" },
                                                            { "condition" : "request_url", "matcher" : "matches", "value" : "/redirecter"}
                                                          ],
-                                          "actions" : [ { "action" : "remove_request_header"  } ],
+                                          "actions" : [ { "action" : "remove_request_header", "value" : "X-HTTP-Header"  } ],
                                           "match_type" : "ALL"
 
                                         }

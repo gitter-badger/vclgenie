@@ -5,6 +5,7 @@ import com.iheart.models.VclConfigAction._
 import com.iheart.util.VclUtils._
 import com.iheart.util.VclUtils.VclActionType._
 import com.iheart.util.VclUtils.VclConditionType._
+import play.Logger
 
 
 trait ModelValidations extends ModelHelpers {
@@ -37,16 +38,19 @@ trait ModelValidations extends ModelHelpers {
     pattern matches net
   }
 
+  //Make sure network syntax is right 1.1.1.1/24
   def validAcl(key: String, value: String): Validation =
     (!(conditionMap.get(key).isDefined && conditionMap(key) == clientIp && !validNetwork(value))).toValidate("Invalid acl " + value)
 
+  //Make sure NameVal cond has both name and val
   def validateNameValCondition(conditions: Seq[RuleCondition]): Validation =
     (conditions.count(c => c.condition.conditionType == NameValCond && (c.name.isEmpty || c.value.isEmpty)) == 0).toValidate("NameVal conditions must have name and value")
 
-
+  //Make sure we used a valid matcher
   def validMatcher(key: String): Validation =
     vclMatcherMap.get(key).isDefined.toValidate("Invalid matcher " + key + " specified")
 
+  //Make sure this matcher can be used for this Condition
   def validMatcherForCondition(key: String, m: String) = {
     val cond = conditionMap.get(key)
     val matcher = vclMatcherMap.get(m)
@@ -58,6 +62,7 @@ trait ModelValidations extends ModelHelpers {
     }
   }
 
+  //Validate the action name
   def validateAction(key: String): Validation =
     actionMap.get(key).isDefined.toValidate("Invalid action key of " + key)
 
@@ -69,25 +74,27 @@ trait ModelValidations extends ModelHelpers {
   def validateMatchType(m: String): Validation =
     (m.toUpperCase == "ANY" || m.toUpperCase == "ALL").toValidate("Invalid matcher type of " + m)
 
+  //Ensure NameVal action has name and val populated
   def validateNameValAction(actions: Seq[RuleAction]) =
     (actions.count(a => a.action.actionType == NameValAction && (a.name.isEmpty || a.value.isEmpty)) == 0).toValidate("NameVal actions must have name and value")
 
+  //Make sure value is populated
   def validateValAction(actions: Seq[RuleAction]) =
-    (actions.count(a => a.action.actionType == ValAction && a.value.isEmpty) == 0).toValidate("actions of type ValAction must have a name")
+    (actions.count(a => a.action.actionType == ValAction && a.value.isEmpty) == 0).toValidate("actions of type ValAction must have a value")
 
-//  def validateBoolAction(actions: Seq[RuleAction]) =
-//    (actions.count(a => a.action.actionType == Bool && (a.value.isEmpty || (!a.value.getOrElse("").asInt.contains(0) && !a.value.getOrElse("").asInt.contains(1)))) == 0).toValidate("Boolean action type requires value to be either 0 or 1 ")
-
+  //Make sure we use only a supported UNIT type
   def validateUnits(units: Option[String]) = (!(units.isDefined && vclUnitMap.get(units.get.toLowerCase).isEmpty )).toValidate("Invalid units " + units.getOrElse(""))
 
+  //Make sure ordered rules have an index
   def hasIndex(rules: Seq[Either[RuleError,Rule]]) = {
     val valid = rules.count(r => r.isRight)
     (rules.count(r => r.isRight && r.right.get.index.isDefined) == valid).toValidate("All ordered rules must have an index field")
   }
 
+  //If we reference a backend, make sure we declared it
   def validateBackendAction(rules: Seq[Either[RuleError,Rule]], backends: Seq[Either[BackendError,Backend]]): Validation = {
     val backendNames: Seq[String] = backends.filter(_.isRight).map(_.right.get.name)
-    val referencedBackends = rules.filter(_.isRight).flatMap(_.right.get.actions.filter(_.action == setBackend)).map(_.name)
+    val referencedBackends = rules.filter(_.isRight).flatMap(_.right.get.actions.filter(_.action == setBackend)).map(_.value)
 
     (referencedBackends.count(name => name.isDefined && !backendNames.contains(name.getOrElse(None))) == 0)
        .toValidate("Invalid backend name specified")
@@ -95,4 +102,7 @@ trait ModelValidations extends ModelHelpers {
 
   def validateBackend(name: String, host: String) =
      true.toValidate("This can never be false :)")
+
+  // We need at least 1 backend
+  def validateBackendExists(backends: Seq[Either[BackendError,Backend]]) = (backends.size > 0).toValidate("At least one backend is required")
 }
