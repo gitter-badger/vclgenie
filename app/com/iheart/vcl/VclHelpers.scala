@@ -19,7 +19,7 @@ import play.api.Logger
 trait VCLHelpers {
 
   var globalConfig: String = ""
-  var vclFetchStr: String = ""
+  var vclBackendRespStr: String = ""
   var vclDeliverStr: String = ""
   var vclRecvStr: String = ""
   var vclErrorStr: String = ""
@@ -44,7 +44,7 @@ trait VCLHelpers {
   }
 
   def addToVcl(str: String, vclFunc: VclFunctionType) = vclFunc match {
-    case VclFunctionType.vclFetch => vclFetchStr += str
+    case VclFunctionType.`vclBackendResp` => vclBackendRespStr += str
     case VclFunctionType.vclRecv => vclRecvStr += str
     case VclFunctionType.vclDeliver => vclDeliverStr += str
     case VclFunctionType.vclError => vclErrorStr += str
@@ -85,7 +85,7 @@ trait VCLHelpers {
 
      b.map(backend => generateBackend(backend))
 
-     addToVcl("set req.backend = " + b.head.name + ";", vclRecv)
+     addToVcl("set req.backend_hint = " + b.head.name + ";", vclRecv)
   }
 
   def toTTL(units: VclUnits) = units match {
@@ -102,19 +102,43 @@ trait VCLHelpers {
   }
 
 
-  def vclAction(ruleaction: RuleAction, vclFunction: VclFunctionType) = ruleaction.action match  {
-    case VclConfigAction.doNotCache => "set beresp.ttl = 0s; "
-    case VclConfigAction.setTTL => addTabs(2) + "set beresp.ttl = " + ruleaction.value.get + toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS)) + ";"
-    case VclConfigAction.httpRedirect=> addTabs(2) + "error 799 " + ruleaction.value.get + " ;"
-    case VclConfigAction.denyRequest => addTabs(2) +"error 403;"
-    case VclConfigAction.removeReqHeader => addTabs(2) +"unset req.http." + ruleaction.value.get + ";"
-    case VclConfigAction.removeRespHeader => addTabs(2) +"unset resp.http." + ruleaction.value.get + ";"
-    case VclConfigAction.addReqHeader => addTabs(2) +"set req.http." + ruleaction.name.get + " = " + ruleaction.value.get + ";"
-    case VclConfigAction.addRespHeader => addTabs(2) + s"""set resp.http.${ruleaction.name.get} = "${ruleaction.value.get}" ;"""
-    case VclConfigAction.remCookies if vclFunction == vclFetch =>  addTabs(2) +"unset beresp.http.cookie ;"
-    case VclConfigAction.remCookies if vclFunction == vclRecv =>  addTabs(2) + "unset resp.http.cookie;"
-    case VclConfigAction.setBackend => addTabs(2) + "set req.backend = " + ruleaction.value.get + ";"
-    case _ => ""
+  def vclAction(ruleaction: RuleAction, vclFunction: VclFunctionType) = {
+
+    val reqHeader = vclFunction match {
+      case VclFunctionType.vclBackendResp => "bereq"
+      case _ => "req"
+    }
+
+    val respHeader = vclFunction match {
+      case VclFunctionType.vclBackendResp => "beresp"
+      case _ => "resp"
+    }
+
+    val actionStr = ruleaction.action match  {
+      case VclConfigAction.doNotCache =>
+        "set beresp.ttl = 0s; "
+      case VclConfigAction.setTTL =>
+       s"""set beresp.ttl = ${ruleaction.value.get}${toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS))};"""
+      case VclConfigAction.httpRedirect =>
+        s"""return(synth(799,"${ruleaction.value.get}"));"""
+      case VclConfigAction.denyRequest =>
+        " return(synth(403));"
+      case VclConfigAction.removeReqHeader  =>
+        s"""unset $reqHeader.http.${ruleaction.value.get};"""
+      case VclConfigAction.removeRespHeader =>
+        s"""unset beresp.http.${ruleaction.value.get};"""
+      case VclConfigAction.addReqHeader  =>
+        s"""set $reqHeader.http.${ruleaction.name.get} = "${ruleaction.value.get}" ;"""
+      case VclConfigAction.addRespHeader =>
+         s"""set resp.http.${ruleaction.name.get} = "${ruleaction.value.get}" ;"""
+      case VclConfigAction.remCookies  =>
+        s"""unset $respHeader.http.cookie ;"""
+      case VclConfigAction.setBackend =>
+        "set req.backend_hint = " + ruleaction.value.get + ";"
+      case _ => ""
+    }
+
+    addTabs(2) + actionStr
   }
 
   def opToText(field: String, op: VclMatchers, value: String, quotes: Boolean = true ) =  {
@@ -137,21 +161,37 @@ trait VCLHelpers {
 
   def toAcl(rule: Rule) = "acl_" + rule.id.toString
 
-  def vclCondition(rule: Rule, rulecondition: RuleCondition) = rulecondition.condition match {
-    case VclConfigCondition.requestUrl =>
-      val urls = rulecondition.value.split(",").map(u => u.trim).mkString("|")
-      " ( " + opToText("req.url",rulecondition.matcher.get,urls) + " ) "
+  def vclCondition(rule: Rule, rulecondition: RuleCondition, vclFunction: VclFunctionType) = rulecondition.condition match {
+    case VclConfigCondition.requestUrl if vclFunction == vclBackendResp =>
+      " ( " + opToText("bereq.url",rulecondition.matcher.get,rulecondition.value) + " ) "
+    case VclConfigCondition.requestUrl  =>
+      " ( " + opToText("req.url",rulecondition.matcher.get,rulecondition.value) + " ) "
+    case VclConfigCondition.contentType if vclFunction == vclBackendResp =>
+      val contentTypes = rulecondition.value.split(",").map(u => u.trim).mkString("|")
+      " ( " + opToText("bereq.http.Content-Type",rulecondition.matcher.get,contentTypes) + " ) "
     case VclConfigCondition.contentType =>
       val contentTypes = rulecondition.value.split(",").map(u => u.trim).mkString("|")
       " ( " + opToText("req.http.Content-Type",rulecondition.matcher.get,contentTypes) + " ) "
-    case VclConfigCondition.clientIp => " ( " + opToText("client.ip",rulecondition.matcher.get, toAcl(rule),false) + " ) "
-    case VclConfigCondition.requestParam => " ( " + opToText("req.url",rulecondition.matcher.get,s"${rulecondition.name.get}=${rulecondition.value}") + " ) "
+    case VclConfigCondition.clientIp =>
+      " ( " + opToText("client.ip",rulecondition.matcher.get, toAcl(rule),false) + " ) "
+    case VclConfigCondition.requestParam  if vclFunction == vclBackendResp =>
+      " ( " + opToText("bereq.url",rulecondition.matcher.get,s"${rulecondition.name.get}=${rulecondition.value}") + " ) "
+    case VclConfigCondition.requestParam =>
+      " ( " + opToText("req.url",rulecondition.matcher.get,s"${rulecondition.name.get}=${rulecondition.value}") + " ) "
+    case VclConfigCondition.clientCookie if vclFunction == vclBackendResp  =>
+      val str = s"""header.get(bereq.http.cookie,"${rulecondition.name.get} = ${rulecondition.value}")"""
+      " ( " + opToText(str,rulecondition.matcher.get,"^$") + " ) "
     case VclConfigCondition.clientCookie =>
       val str = s"""header.get(req.http.cookie,"${rulecondition.name.get} = ${rulecondition.value}")"""
       " ( " + opToText(str,rulecondition.matcher.get,"^$") + " ) "
+    case VclConfigCondition.requestHeader if vclFunction == vclBackendResp=>
+      " ( " + opToText("bereq.http." + rulecondition.name.get, rulecondition.matcher.get, rulecondition.value) + " ) "
     case VclConfigCondition.requestHeader =>
       " ( " + opToText("req.http." + rulecondition.name.get, rulecondition.matcher.get, rulecondition.value) + " ) "
-    case VclConfigCondition.fileExtension => " ( " + opToText("req.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
+    case VclConfigCondition.fileExtension if vclFunction == vclBackendResp =>
+      " ( " + opToText("bereq.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
+    case VclConfigCondition.fileExtension =>
+      " ( " + opToText("req.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
   }
 
 
@@ -160,11 +200,14 @@ trait VCLHelpers {
  // ****************************************************
 
   def generateHostConditions(hostnames: Seq[Hostname], ruleset: String) = {
-    val funcs = List(vclFetch, vclRecv, vclDeliver)
+    val funcs = List(vclBackendResp, vclRecv, vclDeliver)
 
     funcs.foreach { vclfunc =>
       var block = "\n"
-      block +=  addTabs(1) + " if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
+      if (vclfunc == vclBackendResp)
+        block +=  addTabs(1) + " if (" + hostnames.map( h => "(bereq.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
+      else
+        block +=  addTabs(1) + " if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
       block += addTabs(2) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
       block += addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
       block += addTabs(1) + " }\n"
@@ -179,10 +222,10 @@ trait VCLHelpers {
 
 
   def closeConfigs = {
-    vclFetchStr += "}\n"
-    globalConfig += vclFetchStr
+    vclBackendRespStr += "}\n"
+    globalConfig += vclBackendRespStr
 
-    vclRecvStr += addTabs(1) + "else { error 403; } \n"
+    vclRecvStr += addTabs(1) + "else { return(synth(403)); } \n"
     vclRecvStr += addTabs(1) + " call cleanup_request_headers;\n"
     vclRecvStr += "}\n"
     globalConfig += vclRecvStr
@@ -196,10 +239,11 @@ trait VCLHelpers {
   }
 
   val baseVcl = """
-
+                  |  vcl 4.0;
+                  |
                   |  import std;
                   |  import header;
-                  |  import digest;
+                  |
                   |
                   |
                   |  #----------------------------------------
@@ -233,12 +277,12 @@ trait VCLHelpers {
       |
     """.stripMargin
 
-  vclFetchStr =
+  vclBackendRespStr =
     """
       |#------------------------
-      |# VCL_FETCH
+      |# VCL_BACKEND_RESPONSE
       |#------------------------
-      |sub vcl_fetch {
+      |sub vcl_backend_response {
     """.stripMargin
 
   vclRecvStr =
@@ -259,13 +303,13 @@ trait VCLHelpers {
       |#------------------------
       |# VCL_ERROR
       |#------------------------
-      |sub vcl_error {
+      |sub vcl_synth {
       |
       |    call cleanup_request_headers;
       |
-      |    if (obj.status == 799) {
-      |      set obj.http.Location = obj.response;
-      |      set obj.status = 302;
+      |    if (resp.status == 799) {
+      |      set resp.http.Location = resp.reason;
+      |      set resp.status = 302;
       |      return(deliver);
       |    }
       |}

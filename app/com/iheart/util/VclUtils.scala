@@ -14,7 +14,7 @@ object VclUtils {
 
   object VclFunctionType extends Enumeration {
     type VclFunctionType = Value
-    val vclFetch = Value("vcl_fetch")
+    val vclBackendResp = Value("vcl_backend_response")
     val vclRecv = Value("vcl_recv")
     val vclDeliver = Value("vcl_deliver")
     val vclError = Value("vcl_error")

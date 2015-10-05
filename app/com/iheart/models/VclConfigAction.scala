@@ -9,14 +9,14 @@ case class VclAction(key: String, label: String, actionType: VclActionType,
 
 object VclConfigAction {
 
-  val doNotCache = VclAction("do_not_cache","Do Not Cache", Bool,Seq(vclFetch))
-  val setTTL = VclAction("set_ttl","Cache For", Units, Seq(vclFetch) )
+  val doNotCache = VclAction("do_not_cache","Do Not Cache", Bool,Seq(vclBackendResp))
+  val setTTL = VclAction("set_ttl","Cache For", Units, Seq(vclBackendResp) )
   val httpRedirect = VclAction("http_redirect","HTTP Redirect to", SingleAction,  Seq(vclRecv))
   val addCookie = VclAction("add_cookie","Add Cookie", NameValAction, Seq(vclDeliver) )
-  val remCookies = VclAction("remove_cookie","Remove Cookies", Bool, Seq(vclRecv, vclFetch) )
+  val remCookies = VclAction("remove_cookie","Remove Cookies", Bool, Seq(vclRecv, vclBackendResp) )
   val denyRequest = VclAction("deny_request","Deny Request", Bool, Seq(vclRecv))
   val removeReqHeader = VclAction("remove_request_header","Remove Request Header", ValAction, Seq(vclRecv))
-  val removeRespHeader = VclAction("remove_response_header","Remove Response Header", ValAction, Seq(vclFetch))
+  val removeRespHeader = VclAction("remove_response_header","Remove Response Header", ValAction, Seq(vclBackendResp))
   val addReqHeader = VclAction("add_request_header","Add Request Header", NameValAction, Seq(vclRecv))
   val addRespHeader = VclAction("add_response_header","Add Response Header", NameValAction, Seq(vclDeliver))
   val setBackend = VclAction("set_backend","Set backend", ValAction,Seq(vclRecv))
