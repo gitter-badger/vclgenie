@@ -55,11 +55,13 @@ trait BaseController {
 
     def isValid: Boolean =
       req.get.isRight match {
-        case false => Logger.info("isValid is False"); false
+        case false =>  false
         case true =>
+            //See if any of the params are an XError (Left)
             request.orderedRules.count(s => s.isLeft) == 0 &&
             request.hostnames.count(h => h.isLeft) == 0 &&
-            request.globalRules.count(s => s.isLeft) == 0
+            request.globalRules.count(s => s.isLeft) == 0 &&
+            request.backends.count(b => b.isLeft) == 0
       }
 
     def ruleErrors: Seq[RuleError] = req.get.isRight match {

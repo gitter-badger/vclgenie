@@ -18,7 +18,6 @@ class VclController extends Controller with BaseController {
   }
 
   def generate = Action.async(parse.json) { request =>
-  /// val req = request.body.validate[Seq[Either[RuleError,Rule]]]
     val req = request.body.validate[Either[RequestError,VclRequest]]
 
     req match {

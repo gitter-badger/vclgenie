@@ -4,7 +4,7 @@ VclGenie is an API (with an angular frontend if desired) to essentially turn a J
 
 This is basically an alpha version and there are very likely a lot of bugs and edge cases.  Dealing with nuances of VCL is not always straightforward :) 
 
-If you are interested in contributing, please read Contributing.md 
+If you are interested in contributing, please read [Contributing.md](Contributing.md)
 
 #API
 
