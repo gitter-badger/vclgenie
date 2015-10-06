@@ -8,7 +8,8 @@ trait ModelHelpers {
   type ValidationError = String
   type Validation = Either[ValidationError,Boolean]
 
-  def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] = coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
+  def getErrors[S <: BaseError,T](coll: Seq[Either[S,T]]): Seq[String] =
+    coll.filter(c => c.isLeft).flatMap(c => c.left.get.errors)
 
   def getErrors[S <: BaseError,T](i: Either[S,T]): Seq[String] = i.isLeft match {
     case true => i.left.get.errors
@@ -19,7 +20,7 @@ trait ModelHelpers {
     class RichRegex(underlying: Regex) {
       def matches(s: String) = underlying.pattern.matcher(s).matches
     }
-    implicit def regexToRichRegex(r: Regex) = new RichRegex(r)
+    implicit def regexToRichRegex(r: Regex): RichRegex = new RichRegex(r)
   }
 
   implicit class validationToEither(b: Boolean) {
