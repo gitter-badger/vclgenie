@@ -9,7 +9,7 @@ If you want to add a new request condition , follow these steps
 
 #####1. Add a new condition to VclConfigCondition.scala 
 
- For example if we wanted to add a custom condtion that checked User-Agent we would first have to add a new VclCondition.   VclCondition accepts 4 parameters
+ For example if we wanted to add a custom condition that checked User-Agent we would first have to add a new VclCondition.   VclCondition accepts 4 parameters
  <br/>
  
  * key - the key that is used in the API to lookup the condition 
@@ -63,13 +63,15 @@ Similar to conditions, we need to add a new val defining your action as well as 
 Again, we simply need to take action here in VCLHelpers, to ensure we can translate our new action to VCL.  Find the function vclAction and just like conditions, add another match to the case block.  
 
 
-## Add more validations 
+## Add more Model validations 
 
 Adding validations is pretty straightforward.  Open ModelValidations.scala and add any new methods that you want.  Then, in either Rule.scala, RuleAction.scala or RuleCondition.scala, add your validation to the Seq() in the build() or apply() methods.
 
 There is an implicit class "toValidate()" that takes a parameter and spits back the error if the result of the implicit class paramater is false.
 
-## JSON Validation
+Right now the model validations are very lacking in the data itself.  A lot of the checking ensures that there are no missing parameters when necessary, or for example, that we dont try and reference a backend that does not exist.  There should definitely be more checks against regex syntax, or anything else that can blow up VCL :) 
+
+## How the JSON API works 
 There is a fair amount of "lifting" that happens when going from the JSON API to an actual case class that contains the conditions and actions.  There is also VERY heavy use of Either[X,XError] style format for consistency.  This was the cleanest way i could come up with a mechanism to define a way for the building of a condition/action/rule to either succeed or fail.  Then in validations we can easily check with pattern matching or map over  (_.right), etc. 
 
 The basic JSON API request is VCLRequest class, in JsonAPI.scala.  This takes 4 parameters as defined (hostnames, ordered_rules, global_rules, backends).
