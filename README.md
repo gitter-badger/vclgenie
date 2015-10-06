@@ -1,4 +1,4 @@
-#### VCLGenie
+# VCLGenie
 
 VclGenie is an API (with an angular frontend located in frontend/) to essentially turn a JSON API request into Varnish VCL.  The API accepts 4 parameters, defined more below.
 
@@ -46,7 +46,7 @@ See the tests for examples of the JSON API.  The format of the JSON API is rough
 
  There are two type of rules, ordered rules and global rules.  Ordered rules have an index, and are executed in an if/else block such that the first rule that matches gets executed and then stops.  Global rules are ALL executed on EVERY request (if the condition matches).  Global rules are useful when you want to universally apply some action to every request, like add a request header, etc.
  
-#Conditions and Actions
+##Conditions, Actions and MatchType
 
 Conditions and actions each have different "types" as explained below.  Different types require certain fields (like name or value ) to be populated depending on the type.  For example, an http redirect only requires a value (the URL to redirect to), whereas adding an HTTP Response header, requires a name and value.  The table below outlines which fields are required for each type of condition and action.
 
@@ -65,7 +65,7 @@ The currently supported list of conditions are
 * File Extension - Match on the file extension of the request 
 
 The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.
-The matchers column indicates which matchers are valid for that condition.  The supported list is E(Equals), DNE(Does Not Equal), M(Matches), DNM(Does Not Match)    
+The matchers column indicates which matchers are valid for that condition.  The supported list is E(Equals), DNE(Does Not Equal), M(Matches), DNM(Does Not Match).
 
 | Condition     | key         | name   | value    |matchers
 |---------------|-------------|:------:|:--------:|:--------:|
@@ -106,6 +106,8 @@ As a quick example, if I was going to add 2 conditions, one for request url and 
       }
  ]
 ```
+
+For matcher, the valid keys in the JSON api are "equals", "does_not_equal", "matches", "does_not_match"
 
 ### Actions
 
@@ -165,8 +167,14 @@ Using another action example, if we wanted to use 2 actions, Set TTL, and add Re
   ]
 ```
 
+### Index
+Ordered rules require an index so that we can programatically order the rule conditions in VCL.  If you do not specify an "index" field in the ordered_rules block for each rule , you will get an error.  
 
-### Hostnames
+### MatchType
+
+There is a required field for each rule called "match_type".  The only 2 supported values are ANY or ALL.  ANY means that we OR (||) the conditions together and ALL means we AND (&&) the conditions together before executing rule actions.
+
+## Hostnames
 
   Hostnames right now are pretty simple. We simply OR all the hostnames provided.  In a future release we may provide more per host granularity in terms of which rules get bound to each hostname.  For right now, its pretty basic.
   
@@ -180,7 +188,7 @@ Using another action example, if we wanted to use 2 actions, Set TTL, and add Re
   ]  
 ```   
   
-### Backends
+## Backends
 
   VCL requires at least one backend, so we do as well.  We also let you name your backend, so you can reference it in your actions.  For example, you can set 2 backends (we use the first as the default in vcl_recv) and then in an action rule later on, you can set a different backend (by name) based on a rule.  
   
@@ -197,14 +205,10 @@ Using another action example, if we wanted to use 2 actions, Set TTL, and add Re
   ]  
 ```  
   
-### MatchType
 
-There is a required field for each rule called "match_type".  The only 2 supported values are ANY or ALL.  ANY means that we OR (||) the conditions together and ALL means we AND (&&) the conditions together before executing rule actions.
 
-### Index
-Ordered rules require an index so that we can programatically order the rule conditions in VCL.  If you do not specify an "index" field in the ordered_rules block for each rule , you will get an error.  
 
-### FrontEnd 
+## FrontEnd 
 There is an included AngularJS app in the frontend/ directory for a simple (very simple) UI.  Its not designed, but it should be relatively functional for a quicker, more visual way to create rules/conditions.
 
 If you would like to run the angular app and the API locally you can reference the following nginx snippet to get it working
