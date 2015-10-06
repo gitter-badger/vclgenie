@@ -100,9 +100,11 @@ trait ModelValidations extends ModelHelpers {
        .toValidate("Invalid backend name specified")
   }
 
+  //Should probably make sure its either a valid IP or hostname ?
+  //For now I am lazy.  TODO: Fix.
   def validateBackend(name: String, host: String) =
      true.toValidate("This can never be false :)")
 
   // We need at least 1 backend
-  def validateBackendExists(backends: Seq[Either[BackendError,Backend]]) = (backends.size > 0).toValidate("At least one backend is required")
+  def validateBackendExists(backends: Seq[Either[BackendError,Backend]]) = backends.nonEmpty.toValidate("At least one backend is required")
 }
