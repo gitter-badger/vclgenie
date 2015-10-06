@@ -1,6 +1,6 @@
 #### VCLGenie
 
-VclGenie is an API (with an angular frontend if desired) to essentially turn a JSON API request into Varnish VCL.  The API accepts 4 parameters, defined more below.
+VclGenie is an API (with an angular frontend located in frontend/) to essentially turn a JSON API request into Varnish VCL.  The API accepts 4 parameters, defined more below.
 
 This is basically an alpha version and there are very likely a lot of bugs and edge cases.  Dealing with nuances of VCL is not always straightforward :) 
 
@@ -64,17 +64,18 @@ The currently supported list of conditions are
 * Request Header - Match on an HTTP Request header
 * File Extension - Match on the file extension of the request 
 
-The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.    
+The below table outlines what is required in the JSON.  The "key" field is the value of the condition in the JSON, and there is an X in the conditions that require either name, value or both.
+The matchers column indicates which matchers are valid for that condition.  The supported list is E(Equals), DNE(Does Not Equal), M(Matches), DNM(Does Not Match)    
 
-| Condition     | key         | name   | value    | 
-|---------------|-------------|:------:|:--------:|
-|Request Url    | request_url |        |  x       |
-|Content Type   | content_type |       |  x       |
-|Client IP      | client_ip    |       |  x       |
-|Request Param  | request_param | x    |  x       |
-|Cookie         | client_cookie | x    |  x       |
-|Request Header | request_header | x   |  x       |
-|File Extension | file_extension | x   |  x       |
+| Condition     | key         | name   | value    |matchers
+|---------------|-------------|:------:|:--------:|:--------:|
+|Request Url    | request_url |        |  x       |E, DNE, M, DNM 
+|Content Type   | content_type |       |  x       |E, DNE, M, DNM
+|Client IP      | client_ip    |       |  x       |M, DNM
+|Request Param  | request_param | x    |  x       |E, DNE, M, DNM
+|Cookie         | client_cookie | x    |  x       |E, DNE, M, DNM
+|Request Header | request_header | x   |  x       |E, DNE, M, DNM
+|File Extension | file_extension | x   |  x       |E, DNE, M, DNM
 
  The format of the condition in the JSON API is 
 
@@ -170,12 +171,31 @@ Using another action example, if we wanted to use 2 actions, Set TTL, and add Re
   Hostnames right now are pretty simple. We simply OR all the hostnames provided.  In a future release we may provide more per host granularity in terms of which rules get bound to each hostname.  For right now, its pretty basic.
   
   The API required field for hostnames is "hostname". Thats it :) 
+
+```
+  "hostnames" : [
+     {
+        "hostname" : "www.example.com"
+     }
+  ]  
+```   
   
 ### Backends
 
   VCL requires at least one backend, so we do as well.  We also let you name your backend, so you can reference it in your actions.  For example, you can set 2 backends (we use the first as the default in vcl_recv) and then in an action rule later on, you can set a different backend (by name) based on a rule.  
   
-  The required fields for backends is "host" and "host_header".  The optional field is port (defaults to 80).
+  The required fields for backends is "name", "host" and "host_header".  The optional field is port (defaults to 80).
+  
+```
+  "backends" : [
+     {
+        "name" : "mybackend1",
+        "host" : "origin-www.example.com",
+        "host_header" : "www.example.com",
+        "port" : 8080
+     }
+  ]  
+```  
   
 ### MatchType
 
