@@ -45,14 +45,7 @@ class VclControllerSpec extends Specification with JsonData {
       val bodyText: String = contentAsString(result)
       bodyText must contain("NameVal actions must have name and value")
     }
-
-//    "not allow a boolean action to have a missing name or value other than 0 or 1" in new WithApplication {
-//      val Some(result) = route(FakeRequest(POST,"/vcl").withJsonBody(ruleJson6))
-//      status(result) must equalTo(BAD_REQUEST)
-//      val bodyText = contentAsString(result)
-//      bodyText must contain("Boolean action type requires value")
-//    }
-
+    
     "not allow a name action to have a missing name" in new WithApplication {
       val Some(result) = route(FakeRequest(POST,"/vcl").withJsonBody(ruleJson7))
       status(result) must equalTo(BAD_REQUEST)

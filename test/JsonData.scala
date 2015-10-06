@@ -1,8 +1,5 @@
 import play.api.libs.json.Json
 
-/**
- * Created by 1110109 on 8/18/15.
- */
 trait JsonData {
 
   val ruleJson = Json.parse("""{
