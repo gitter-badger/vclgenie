@@ -71,6 +71,10 @@ There is an implicit class "toValidate()" that takes a parameter and spits back 
 
 Right now the model validations are very lacking in the data itself.  A lot of the checking ensures that there are no missing parameters when necessary, or for example, that we dont try and reference a backend that does not exist.  There should definitely be more checks against regex syntax, or anything else that can blow up VCL :) 
 
+## Unit Tests
+
+There are some basic Unit Test in the VclControllerSpec.scala file.  There is also a JsonData.scala file that contains a set of mock JSON data to keep the unit test file a bit cleaner.  The unit test are fairly straight forward, create new JSON API stubs, write a test to validate behavior.
+
 ## How the JSON API works 
 There is a fair amount of "lifting" that happens when going from the JSON API to an actual case class that contains the conditions and actions.  There is also VERY heavy use of Either[X,XError] style format for consistency.  This was the cleanest way i could come up with a mechanism to define a way for the building of a condition/action/rule to either succeed or fail.  Then in validations we can easily check with pattern matching or map over  (_.right), etc. 
 

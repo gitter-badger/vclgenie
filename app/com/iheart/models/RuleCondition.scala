@@ -6,7 +6,6 @@ import com.iheart.util.VclUtils.VclMatchers._
 import com.iheart.util.VclUtils._
 import play.Logger
 
-//                                 request_url                                matches           someval             somecookiename
 case class RuleCondition(condition: VclCondition, matcher: Option[VclMatchers], value: String, name: Option[String] = None)
 
 object RuleCondition extends ModelValidations {
