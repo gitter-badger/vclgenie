@@ -11,7 +11,7 @@ object RuleAction extends ModelValidations {
   def apply(key: String, name: Option[String], value: Option[String], units: Option[String]): Either[RuleError,RuleAction] = {
       isValid(Seq(validateAction(key),validateUnits(units))) match {
         case Left(x) => Left(RuleError(x))
-        case Right(y)=>  Right(RuleAction(actionMap(key),name,value,vclUnitMap.get(units.getOrElse(""))))
+        case Right(y)=>  Right(RuleAction(actionMap(key),name,value,vclUnitMap.get(units.getOrElse("").toLowerCase)))
       }
   }
 

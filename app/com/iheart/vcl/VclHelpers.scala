@@ -89,10 +89,11 @@ trait VCLHelpers {
   }
 
   def toTTL(units: VclUnits) = units match {
-    case VclUnits.DAYS => "d"
-    case VclUnits.HOURS => "h"
-    case VclUnits.MINUTES => "m"
     case VclUnits.SECONDS => "s"
+    case VclUnits.MINUTES => "m"
+    case VclUnits.HOURS => "h"
+    case VclUnits.DAYS => "d"
+    case VclUnits.WEEKS => "w"
     case VclUnits.YEARS => "y"
   }
 
