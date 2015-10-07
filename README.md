@@ -2,6 +2,8 @@
 
 VclGenie is an API (with an angular frontend located in frontend/) to essentially turn a JSON API request into Varnish VCL.  The API accepts 4 parameters, defined more below.
 
+To see VCLGenie in action, check out the demo site at [http://www.vclgenie.com](http://www.vclgenie.com)
+
 This is basically an alpha version and there are very likely a lot of bugs and edge cases.  Dealing with nuances of VCL is not always straightforward :) 
 
 If you are interested in contributing, please read [Contributing.md](Contributing.md)
