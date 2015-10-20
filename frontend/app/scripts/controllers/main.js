@@ -71,13 +71,33 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
   //---------------------------------
   // View conditions
   //---------------------------------
-  $scope.isNameValCond = function(cond) {
+  $scope.showNameCond = function(cond) {
     var c = getConditionByKey(cond); 
 
     if (c != undefined && c.condition_type == 'NameValCond') 
       return true ;
     else 
       return false; 
+  }
+
+  $scope.showValCond = function(cond) {
+    var c = getConditionByKey(cond); 
+
+    console.log("Checking condition:"); console.log(c);
+
+    if (c != undefined && c.condition_type != 'BoolCond' ) 
+      return true ;
+    else 
+      return false; 
+  }
+
+  $scope.showMatchCond = function(cond) {
+    var c = getConditionByKey(cond); 
+
+    if (c != undefined && c.condition_type != 'BoolCond') 
+      return true ; 
+    else 
+      return false ; 
   }
 
   $scope.isNameValAction = function(cond) {
@@ -171,7 +191,16 @@ angular.module('vclgenie').controller('MainCtrl', ['$scope','$http','Api', funct
 
   $scope.conditionToText = function(c) {
     var cond = getConditionByKey(c); 
-    return cond.label; 
+    var str = '' ;
+
+    str = str + cond.label ; 
+    if (cond.condition_type == 'NameValCond')
+      str = str + ' ' + cond.name ; 
+
+    if (cond.condition_type == 'NameValCond' || cond.condition_type == 'ValCond')
+      str = str + matcherToText(cond.matcher) + ' ' + cond.value ; 
+
+    return str ; 
   }
 
   $scope.matcherToText = function(matcher) {

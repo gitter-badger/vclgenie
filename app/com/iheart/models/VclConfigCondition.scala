@@ -18,6 +18,7 @@ object VclConfigCondition {
   val clientCookie = VclCondition("cookie","Cookie", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
   val requestHeader = VclCondition("request_header","Request header", NameValCond, Seq(Matches,DoesNotMatch,Equals,DoesNotEqual))
   val fileExtension = VclCondition("file_extension", "File Extension", ValCond, Seq(Equals,DoesNotEqual,Matches,DoesNotMatch))
+  val isCached = VclCondition("is_cached", "is Cached", BoolCond, Seq() )
 
   val conditionMap = Map(
     "request_url" -> requestUrl,
@@ -26,8 +27,10 @@ object VclConfigCondition {
     "request_param" -> requestParam,
     "cookie" -> clientCookie,
     "request_header" -> requestHeader,
-    "file_extension" -> fileExtension )
+    "file_extension" -> fileExtension ,
+    "is_cached" -> isCached )
 
   val singleValConditions = conditionMap.filter(x => x._2.conditionType == ValCond)
   val nameValueConditions = conditionMap.filter(x => x._2.conditionType == NameValCond)
+  val boolConditions = conditionMap.filter(x => x._2.conditionType == BoolCond)
 }

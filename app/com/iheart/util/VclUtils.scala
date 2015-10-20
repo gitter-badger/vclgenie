@@ -30,7 +30,7 @@ object VclUtils {
 
   object VclConditionType extends Enumeration {
     type VclConditionType = Value
-    val ValCond, NameValCond, Dropdown = Value
+    val ValCond, NameValCond, Dropdown, BoolCond = Value
   }
 
   object VclMatchers extends Enumeration {

@@ -60,6 +60,13 @@ class VclControllerSpec extends Specification with JsonData {
       bodyText must contain("Invalid backend name specified")
     }
 
+    "allow me to use a boolean condition is_cached" in new WithApplication {
+      val Some(result) = route(FakeRequest(POST,"/vcl").withJsonBody(ruleJson9))
+     // status(result) must equalTo(OK)
+      val bodyText = contentAsString(result)
+      bodyText must not contain("error")
+    }
+
 
   }
 }

@@ -30,7 +30,7 @@ class VclGenerator extends VCLHelpers {
   }
 
   def parseGlobalRules(ruleset: String, rules: Seq[Rule]) = {
-    val funcs = List(vclBackendResp,vclRecv,vclDeliver)
+    val funcs = List(vclBackendResp,vclRecv,vclDeliver, vclHit)
 
     funcs.foreach { vclfunc =>
       globalConfig += "sub ruleset_" + ruleset +  "_global_" + vclfunc.toString + " { \n"

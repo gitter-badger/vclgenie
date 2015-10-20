@@ -47,8 +47,9 @@ trait ModelValidations extends ModelHelpers {
     (conditions.count(c => c.condition.conditionType == NameValCond && (c.name.isEmpty || c.value.isEmpty)) == 0).toValidate("NameVal conditions must have name and value")
 
   //Make sure we used a valid matcher
-  def validMatcher(key: String): Validation =
-    vclMatcherMap.get(key).isDefined.toValidate("Invalid matcher " + key + " specified")
+  def validMatcher(condition: String, matcher: String): Validation = {
+    (!(needsMatcher(condition) && vclMatcherMap.get(matcher).isEmpty)).toValidate("Invalid matcher " + matcher + " specified")
+  }
 
   //Make sure this matcher can be used for this Condition
   def validMatcherForCondition(key: String, m: String) = {

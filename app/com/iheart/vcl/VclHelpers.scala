@@ -23,6 +23,7 @@ trait VCLHelpers {
   var vclDeliverStr: String = ""
   var vclRecvStr: String = ""
   var vclErrorStr: String = ""
+  var vclHitStr: String = ""
 
 
   //***************************************************************************
@@ -44,10 +45,11 @@ trait VCLHelpers {
   }
 
   def addToVcl(str: String, vclFunc: VclFunctionType) = vclFunc match {
-    case VclFunctionType.`vclBackendResp` => vclBackendRespStr += str
+    case VclFunctionType.vclBackendResp => vclBackendRespStr += str
     case VclFunctionType.vclRecv => vclRecvStr += str
     case VclFunctionType.vclDeliver => vclDeliverStr += str
     case VclFunctionType.vclError => vclErrorStr += str
+    case VclFunctionType.vclHit => vclHitStr += str
   }
 
   def generateAcl(rules: Seq[Rule]) = {
@@ -193,6 +195,8 @@ trait VCLHelpers {
       " ( " + opToText("bereq.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
     case VclConfigCondition.fileExtension =>
       " ( " + opToText("req.http.ext", rulecondition.matcher.get, rulecondition.value) + " ) "
+    case VclConfigCondition.isCached =>
+      " ( obj.ttl > 0 ) "
   }
 
 
@@ -201,7 +205,7 @@ trait VCLHelpers {
  // ****************************************************
 
   def generateHostConditions(hostnames: Seq[Hostname], ruleset: String) = {
-    val funcs = List(vclBackendResp, vclRecv, vclDeliver)
+    val funcs = List(vclBackendResp, vclRecv, vclDeliver, vclHit)
 
     funcs.foreach { vclfunc =>
       var block = "\n"
@@ -298,6 +302,15 @@ trait VCLHelpers {
       |     set req.http.ext = regsub( req.http.ext, ".+\\.([a-zA-Z0-9]+)$", "\\1" );
       |
     """.stripMargin
+
+  vclHitStr =
+     """
+       |#--------------------------
+       |# VCL_HIT
+       |#--------------------------
+       |sub vcl_hit {
+       |
+     """.stripMargin
 
   vclErrorStr =
     """
