@@ -19,8 +19,8 @@ object Formats {
 
   implicit val ruleConditionFormat: Reads[Either[RuleError,RuleCondition]] = (
     ( JsPath \ "condition").read[String] and
-    (JsPath \ "matcher").read[String] and
-      (JsPath \ "value").read[String] and
+    (JsPath \ "matcher").readNullable[String] and
+      (JsPath \ "value").readNullable[String] and
       (JsPath \ "name").readNullable[String]
     )(RuleCondition.build _)
 
@@ -76,6 +76,7 @@ object Formats {
 
   case class ConfigResponse(nameValueConditions: Map[String,VclCondition],
                             singleValueConditions: Map[String,VclCondition],
+                            boolConditions: Map[String,VclCondition],
                             actions: Map[String, VclAction])
 
   implicit val vclCondTypeWrites: Writes[VclConditionType] = new Writes[VclConditionType] {
@@ -103,7 +104,7 @@ object Formats {
       Json.obj("key" -> a.key,
                "label" -> a.label,
                "action_type" -> a.actionType,
-               "vcl_functions" -> a.vclFunctions)
+               "vcl_functions" -> a.validVclFunctions)
     }
   }
 
@@ -120,9 +121,10 @@ object Formats {
     def writes(cr: ConfigResponse): JsValue = {
       val nvc = cr.nameValueConditions.map( (nv) => Json.toJson(nv._2))
       val svc = cr.singleValueConditions.map( (sv) => Json.toJson(sv._2))
+      val bvc = cr.boolConditions.map( (sv) => Json.toJson(sv._2))
       val actions = cr.actions.map( a => Json.toJson( a._2))
       val matchers = vclMatcherMap.map( v => Json.obj("key" -> v._1, "label" -> v._2._2))
-      Json.obj("conditions" -> svc.++(nvc), "actions" -> actions, "vcl_matchers" -> matchers)
+      Json.obj("conditions" -> svc.++(nvc).++(bvc), "actions" -> actions, "vcl_matchers" -> matchers)
     }
 
   }

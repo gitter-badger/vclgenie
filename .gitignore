@@ -25,3 +25,10 @@ target
 /.project
 /.settings
 /RUNNING_PID
+
+# vim swap files
+*sw*
+
+# jenv
+.java-version
+

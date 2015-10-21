@@ -11,7 +11,7 @@ class VclGenerator extends VCLHelpers {
 
 
   def parseGlobalRule(rule: Rule, vclFunction: VclFunctionType) = {
-    val actions = rule.actions.filter(a => a.action.vclFunctions.contains(vclFunction)).map { action =>
+    val actions = rule.actions.filter(a => a.action.validVclFunctions.contains(vclFunction)).map { action =>
       vclAction(action,vclFunction)
     }
 
@@ -30,7 +30,7 @@ class VclGenerator extends VCLHelpers {
   }
 
   def parseGlobalRules(ruleset: String, rules: Seq[Rule]) = {
-    val funcs = List(vclBackendResp,vclRecv,vclDeliver)
+    val funcs = List(vclBackendResp,vclRecv,vclDeliver, vclHit)
 
     funcs.foreach { vclfunc =>
       globalConfig += "sub ruleset_" + ruleset +  "_global_" + vclfunc.toString + " { \n"
@@ -71,7 +71,11 @@ class VclGenerator extends VCLHelpers {
   //  }
 
   def parseOrderedRules(ruleset: String, rules: Seq[Rule]) = {
-    val funcs = List(vclBackendResp,vclRecv,vclDeliver)
+    //val funcs = List(vclBackendResp,vclRecv,vclDeliver, vclHit)
+    val funcs: Seq[VclFunctionType] =
+      rules.flatMap(r => r.actions.map(a => a.action.validVclFunctions)).flatten intersect
+       rules.flatMap(r => r.conditions.map(c => c.condition.validVclFunctions)).flatten
+
     funcs.map { vclfunc =>
       globalConfig += "sub ruleset_" + ruleset + "_ordered_" + vclfunc + " { \n"
       rules.filter(_.actionHasVclFunction(vclfunc)).sortBy(_.index).zipWithIndex.foreach { case (rule,idx) =>

@@ -1,5 +1,9 @@
 package com.iheart.models
 
+import com.iheart.models.VclConfigCondition._
+import com.iheart.util.VclUtils.VclConditionType._
+import play.Logger
+
 import scala.util.matching.Regex
 
 
@@ -16,6 +20,10 @@ trait ModelHelpers {
     case false => Seq()
   }
 
+  def needsMatcher(key: String): Boolean = {
+    conditionMap.get(key).isDefined &&
+      conditionMap(key).conditionType != BoolCond
+  }
   object RegexUtils {
     class RichRegex(underlying: Regex) {
       def matches(s: String) = underlying.pattern.matcher(s).matches
