@@ -104,7 +104,7 @@ object Formats {
       Json.obj("key" -> a.key,
                "label" -> a.label,
                "action_type" -> a.actionType,
-               "vcl_functions" -> a.vclFunctions)
+               "vcl_functions" -> a.validVclFunctions)
     }
   }
 

@@ -67,6 +67,13 @@ class VclControllerSpec extends Specification with JsonData {
       bodyText must not contain("error")
     }
 
+    "not allow me to use an action that is not a valid condition" in new WithApplication {
+      val Some(result) = route(FakeRequest(POST,"/vcl").withJsonBody(ruleJson10))
+      status(result) must equalTo(BAD_REQUEST)
+      val bodyText = contentAsString(result)
+      bodyText must contain("Sorry you mixed conditions and actions that can not be used")
+    }
+
 
   }
 }

@@ -8,8 +8,7 @@ trait JsonData {
                                          {
                                           "conditions" : [ { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue", "name" : "somename" },
                                                            { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue2", "name" : "somename2"},
-                                                           { "condition" : "request_url", "matcher" : "matches", "value" : "/cookieurl"},
-                                                           { "condition" : "client_ip" , "matcher" : "matches", "value" : "3.3.3.3" }
+                                                           { "condition" : "request_url", "matcher" : "matches", "value" : "/cookieurl"}
                                                          ],
                                          "actions" : [ { "action" : "set_ttl", "value" : "600", "units" : "SECONDS" }
                                                       ],
@@ -364,13 +363,11 @@ trait JsonData {
                                   "ordered_rules" :
                                       [
                                          {
-                                          "conditions" : [ { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue", "name" : "somename" },
-                                                           { "condition" : "cookie", "matcher" : "matches", "value" : "somevalue2", "name" : "somename2"},
-                                                           { "condition" : "request_url", "matcher" : "matches", "value" : "/cookieurl"},
+                                          "conditions" : [
                                                            { "condition" : "is_cached"  }
                                                          ],
                                          "actions" : [
-                                           { "action" : "remove_cookies", "value" : "somecookie" }
+                                           { "action" : "set_ttl", "value" : "300" }
                                                       ],
                                           "match_type" : "ANY",
                                           "index" : 2
@@ -396,6 +393,33 @@ trait JsonData {
                                           "match_type" : "ALL"
 
                                         }
+                                      ],
+
+                                "hostnames" :
+                                     [ { "hostname" : "www.yahoo.com" }, { "hostname" : "www.microsoft.com" }] ,
+
+                                "backends" : [ { "name" : "backend1" , "host" : "www.myhost.com", "host_header" : "www.myhost.com"} ]
+
+                              }""")
+
+
+  val  ruleJson10 = Json.parse("""{
+                                  "ordered_rules" :
+                                      [
+                                         {
+                                          "conditions" : [
+                                                           { "condition" : "is_cached"  }
+                                                         ],
+                                         "actions" : [
+                                           { "action" : "add_cookie", "name" : "cachecookie", "value" : "somecookievalue" }
+                                                      ],
+                                          "match_type" : "ANY",
+                                          "index" : 1
+                                        }
+                                      ],
+
+                                  "global_rules" : [
+
                                       ],
 
                                 "hostnames" :

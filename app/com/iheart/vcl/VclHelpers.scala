@@ -117,11 +117,16 @@ trait VCLHelpers {
       case _ => "resp"
     }
 
+    val ttl = vclFunction match {
+      case VclFunctionType.vclHit => "obj.ttl"
+      case _ => "bereq.ttl"
+    }
+
     val actionStr = ruleaction.action match  {
       case VclConfigAction.doNotCache =>
         "set beresp.ttl = 0s; "
       case VclConfigAction.setTTL =>
-       s"""set beresp.ttl = ${ruleaction.value.get}${toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS))};"""
+       s"""set ${ttl} = ${ruleaction.value.get}${toTTL(ruleaction.units.getOrElse(VclUnits.SECONDS))};"""
       case VclConfigAction.httpRedirect =>
         s"""return(synth(799,"${ruleaction.value.get}"));"""
       case VclConfigAction.denyRequest =>

@@ -2,6 +2,7 @@ package com.iheart.models
 
 import com.iheart.models.VclConfigCondition._
 import com.iheart.models.VclConfigAction._
+import com.iheart.util.VclUtils.VclFunctionType.VclFunctionType
 import com.iheart.util.VclUtils._
 import com.iheart.util.VclUtils.VclActionType._
 import com.iheart.util.VclUtils.VclConditionType._
@@ -108,4 +109,22 @@ trait ModelValidations extends ModelHelpers {
 
   // We need at least 1 backend
   def validateBackendExists(backends: Seq[Either[BackendError,Backend]]) = backends.nonEmpty.toValidate("At least one backend is required")
+
+  //Ensure that our conditions can be used where our actions are
+  def validateVclFunctions(conditions: Seq[RuleCondition], actions: Seq[RuleAction]) = {
+
+    //first we find the vcl functions common across all conditions
+    val validConditions: Seq[VclFunctionType] = conditions.foldLeft(conditions.head.condition.validVclFunctions) {
+      (z,i) => z intersect i.condition.validVclFunctions
+    }
+
+    //then we find all the places an action can be used
+    val validActions: Seq[VclFunctionType] = actions.foldLeft(actions.head.action.validVclFunctions) {
+      (z,i) => z union i.action.validVclFunctions
+    }.distinct
+
+    ((validActions intersect validConditions) != Seq()).toValidate("Sorry you mixed conditions and actions that can not be used together")
+
+
+  }
 }

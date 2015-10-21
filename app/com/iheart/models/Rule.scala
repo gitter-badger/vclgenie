@@ -22,7 +22,7 @@ case class Rule(conditions: Seq[RuleCondition],
   
   def toConfigCondition(str: String) = conditionMap(str)
 
-  def actionHasVclFunction(func: VclFunctionType): Boolean = actions.count(a => a.action.vclFunctions.contains(func)) > 0
+  def actionHasVclFunction(func: VclFunctionType): Boolean = actions.count(a => a.action.validVclFunctions.contains(func)) > 0
 
 }
 
@@ -44,7 +44,8 @@ object Rule extends ModelValidations {
                   validateSingleAction(actions.map(_.right.get)),
                   validateNameValAction(actions.map(_.right.get)),
                   validateNameValCondition(conditions.map(_.right.get)),
-                  validateValAction(actions.map(_.right.get))) ) match {
+                  validateValAction(actions.map(_.right.get)),
+                  validateVclFunctions(conditions.map(_.right.get),actions.map(_.right.get) )) ) match {
         case Left(x) => Logger.info("error with rule: " + x.toString()); Left(RuleError(x))
         case Right(y) => Right (Rule(conditions.map (_.right.get), actions.map (_.right.get), VclMatchType.fromString(matchType), index) )
       }
