@@ -54,7 +54,7 @@
       </div>
 
 
-      <span ng-if="isNameValCond(globalrule.conditions[$index].condition)">
+      <span ng-if="showNameCond(globalrule.conditions[$index].condition)">
         <div class="form-group">
         <label class="control-label col-sm-2">Name  </label> 
         <div class="col-sm-10">
@@ -63,7 +63,7 @@
        </div>
       </span>
 
-      <span ng-if="currentGlobalCondition">
+      <span ng-if="currentGlobalCondition && showValCond(globalrule.conditions[$index].condition)">
       <div class="form-group">
          <label class="control-label  col-sm-2">Match Type</label> 
          <div class="col-sm-10">
@@ -75,7 +75,7 @@
       </span>
 
 
-      <span ng-if="currentGlobalCondition"> 
+      <span ng-if="currentGlobalCondition && showMatchCond(globalrule.conditions[$index].condition)"> 
        <div class="form-group">
         <label class="control-label col-sm-2">Value</label> 
         <div class="col-sm-10">
@@ -169,7 +169,7 @@
         <div style="background: #e7e7e7; padding: 20px;">
            Match: {{rule.match_type | uppercase}} Conditions<br/>
            <br/><div ng-repeat="c in rule.conditions">
-            {{conditionToText(c.condition)}} {{c.name}} {{matcherToText(c.matcher)}} {{c.value}}
+            {{conditionToText(c.condition)}}
           </div>
           <br/><div ng-repeat="a in rule.actions">
             {{actionToText(a.action)}} {{a.name}} {{a.value}} {{a.units}}
@@ -219,7 +219,7 @@
                </div>
 
 
-               <span ng-if="isNameValCond(orderedrule.conditions[$index].condition)">
+               <span ng-if="showNameCond(orderedrule.conditions[$index].condition)">
                 <div class="form-group">
                   <label class="control-label col-sm-2">Name  </label> 
                   <div class="col-sm-10">
@@ -328,15 +328,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
      </div>
 
      <div class="col-md-6">  
@@ -345,7 +336,7 @@
               <div as-sortable-item-handle class="as-sortable-item-handle" style="background: #e7e7e7; padding: 20px;">
                  Match: {{rule.match_type | uppercase}} Conditions<br/>
                  <br/><div ng-repeat="c in rule.conditions">
-                  {{conditionToText(c.condition)}} {{c.name}} {{matcherToText(c.matcher)}} {{c.value}}
+                  {{conditionToText(c.condition)}} 
                 </div>
                 <br/><div ng-repeat="a in rule.actions">
                   {{actionToText(a.action)}} {{a.name}} {{a.value}} {{a.units}}
