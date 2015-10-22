@@ -78,6 +78,7 @@ The matchers column indicates which matchers are valid for that condition.  The 
 |Cookie         | client_cookie | x    |  x       |E, DNE, M, DNM
 |Request Header | request_header | x   |  x       |E, DNE, M, DNM
 |File Extension | file_extension | x   |  x       |E, DNE, M, DNM
+|Is Cached      | is_cached  |   | | NONE
 
  The format of the condition in the JSON API is 
 
