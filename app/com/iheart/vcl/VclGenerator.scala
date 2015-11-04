@@ -36,11 +36,11 @@ class VclGenerator extends VCLHelpers {
 
     val res = funcs.map { vclfunc =>
       "sub ruleset_" + ruleset +  "_global_" + vclfunc.toString + " { \n" +
-      rules.filter(_.actionHasVclFunction(vclfunc)).foreach { rule =>
+      rules.filter(_.actionHasVclFunction(vclfunc)).map { rule =>
         generateGlobalRule(rule,vclfunc)
-      } +
+      }.mkString +
       "}\n\n"
-    }
+    }.mkString
 
     config.copy(globalConfig = config.globalConfig + res)
   }
@@ -77,11 +77,11 @@ class VclGenerator extends VCLHelpers {
 
     val res = funcs.map { vclfunc =>
       "sub ruleset_" + ruleset + "_ordered_" + vclfunc + " { \n" +
-      rules.filter(_.actionHasVclFunction(vclfunc)).sortBy(_.index).zipWithIndex.foreach { case (rule,idx) =>
+      rules.filter(_.actionHasVclFunction(vclfunc)).sortBy(_.index).zipWithIndex.map { case (rule,idx) =>
         generateOrderedRule(rule,vclfunc,idx)
-      } +
+      }.mkString +
       "}\n\n"  //End sub for this VCL Function
-    }
+    }.mkString
 
     config.copy(globalConfig = config.globalConfig + res)
   }
@@ -97,7 +97,9 @@ class VclGenerator extends VCLHelpers {
     val pipeline = Seq(generateAcl(orderedRules ++ globalRules) _,
                        generateBackends(backends) _ ,
                        generateHostConditions(hostnames,ruleset) _,
+                       addComment(1,"Global Rules") _,
                        generateGlobalRules(ruleset,globalRules) _ ,
+                       addComment(1,"Ordered Rules") _,
                        generateOrderedRules(ruleset,orderedRules) _ ,
                        closeConfigs _
     )
