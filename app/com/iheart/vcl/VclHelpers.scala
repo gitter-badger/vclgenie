@@ -19,14 +19,11 @@ import play.api.Logger
 trait VCLHelpers {
 
   case class VclOutput(globalConfig: String, vclBackendResp: String = "", vclDeliver: String = "", vclRecv: String = "",
-                       vclError: String = "", vclHit: String = "")
+                       vclError: String = "", vclHit: String = "") {
 
-  var globalConfig: String = ""
-//  var vclBackendRespStr: String = ""
-//  var vclDeliverStr: String = ""
-//  var vclRecvStr: String = ""
-//  var vclErrorStr: String = ""
-//  var vclHitStr: String = ""
+
+    def toOutput() = globalConfig + vclBackendResp + vclDeliver + vclRecv + vclError + vclHit
+  }
 
 
   //***************************************************************************
@@ -66,27 +63,31 @@ trait VCLHelpers {
 
     val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
 
-    rules.filter(_.needsAcl).foreach { rule =>
+    val configStr = rules.filter(_.needsAcl).map { rule =>
 
-      globalConfig += "acl acl_" + rule.id + "{ \n"
+
       val aclRules = rule.conditions.filter(f => f.condition == VclConfigCondition.clientIp )
 
-      aclRules.foreach { aclrule =>
+      "acl acl_" + rule.id + "{ \n" +
+      aclRules.map { aclrule =>
         val net = aclrule.value match {
           case x if x.contains("/") => x
           case x => x + "/32"
         }
         val pattern(ip,mask) = net
-        globalConfig += addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
-      }
-      globalConfig += "}\n\n"
+        addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
+      }.mkString +
+      "}\n\n"
 
-    }
-    config.copy(globalConfig = config.globalConfig + globalConfig )
+    }.mkString
+
+    Logger.info("configStr: " + configStr)
+
+    config.copy(globalConfig = config.globalConfig + configStr )
   }
 
 
-  def generateBackends(b: Seq[Backend])(config: VclOutput): VclOutput = {
+  def generateBackends(backends: Seq[Backend])(config: VclOutput): VclOutput = {
 
     def healthcheck(b: Backend) = {
       if (b.probe.isDefined)
@@ -96,19 +97,21 @@ trait VCLHelpers {
     }
 
     def generateBackend(backends: Seq[Backend], cfg: String = ""): String = backends match {
-      case Nil => cfg
+      case Nil =>  cfg
       case backend :: tail =>
-        val globalConfig = "backend " + backend.name + " { \n" +
+        val backendStr = "backend " + backend.name + " { \n" +
                          addTabs(1) + ".host = \"" + backend.host + "\" ;\n" +
                          addTabs(1) + ".host_header = \"" + backend.hostHeader + "\" ; \n" +
                          addTabs(1) + ".port = \"" + backend.port + "\"; \n" +
                          healthcheck(backend) +
                          "}\n\n"
-        generateBackend(tail,cfg + globalConfig)
+        generateBackend(tail,cfg + backendStr)
     }
 
-    val cfg1 = addToVcl("set req.backend_hint = " + b.head.name + ";", vclRecv)(config)
-    cfg1.copy(globalConfig = cfg1.globalConfig + generateBackend(b))
+    val cfg1 = addToVcl(addTabs(1) + "set req.backend_hint = " + backends.head.name + ";", vclRecv)(config)
+    Logger.info("BACKEND CONFIG IS " + generateBackend(backends).mkString);
+    Logger.info("CURRENT GLOBAL IS " + cfg1.globalConfig)
+    cfg1.copy(globalConfig = cfg1.globalConfig + generateBackend(backends).mkString)
   }
 
   def toTTL(units: VclUnits) = units match {
@@ -237,9 +240,10 @@ trait VCLHelpers {
       case h :: t =>
         val reqClass = if (h == vclBackendResp) "bereq" else "req"
         val cfg = "\n" +
-                  addTabs(1) + " if (" + hostnames.map( h => reqClass + ".http.Host == \"" + h.name + "\")").mkString("||") + ") {\n" +
+                  addTabs(1) + "if (" + hostnames.map( h => "(" + reqClass + ".http.Host == \"" + h.name + "\")").mkString("||") + ") {\n" +
                   addTabs(2) + "call ruleset_" + ruleset + "_global_" + h + ";\n" +
-                  addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + h + ";\n"
+                  addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + h + ";\n" +
+                  addTabs(1) + "}\n"
         hostAcc(t,addToVcl(cfg,h)(configAcc))
     }
 
@@ -267,10 +271,15 @@ trait VCLHelpers {
     "}\n"
   }
 
+  def closevclHit() = {
+    "}\n"
+  }
+
   def closeConfigs(config: VclOutput): VclOutput = {
     config.copy(vclBackendResp = config.vclBackendResp + closevclBackendResp(),
                 vclRecv = config.vclRecv + closevclRecv(),
-                vclDeliver = config.vclDeliver + closevclDeliver())
+                vclDeliver = config.vclDeliver + closevclDeliver(),
+                vclHit = config.vclHit + closevclHit())
   }
 
   val baseVcl = """

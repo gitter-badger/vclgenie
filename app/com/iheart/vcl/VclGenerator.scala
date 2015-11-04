@@ -112,7 +112,8 @@ class VclGenerator extends VCLHelpers {
 
     val f = Function.chain(pipeline)
     val config = f(baseConfig)
-    config.globalConfig + config.vclBackendResp + config.vclDeliver + config.vclError + config.vclHit + config.vclRecv
+    Logger.info("GLOBAL 1: " + config.globalConfig)
+    config.toOutput() //+ config.vclBackendResp + config.vclDeliver + config.vclError + config.vclHit + config.vclRecv
   }
 
 
