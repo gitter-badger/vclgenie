@@ -81,8 +81,6 @@ trait VCLHelpers {
 
     }.mkString
 
-    Logger.info("configStr: " + configStr)
-
     config.copy(globalConfig = config.globalConfig + configStr )
   }
 
@@ -109,8 +107,6 @@ trait VCLHelpers {
     }
 
     val cfg1 = addToVcl(addTabs(1) + "set req.backend_hint = " + backends.head.name + ";", vclRecv)(config)
-    Logger.info("BACKEND CONFIG IS " + generateBackend(backends).mkString);
-    Logger.info("CURRENT GLOBAL IS " + cfg1.globalConfig)
     cfg1.copy(globalConfig = cfg1.globalConfig + generateBackend(backends).mkString)
   }
 
