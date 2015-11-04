@@ -3,7 +3,6 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
 POST    /vcl                        com.iheart.controllers.VclController.generate()
 GET     /config                     com.iheart.controllers.VclController.config()
 

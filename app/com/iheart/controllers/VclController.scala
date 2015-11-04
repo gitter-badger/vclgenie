@@ -13,9 +13,9 @@ import scala.concurrent.Future
 
 class VclController extends Controller with BaseController {
 
-  def index = Action.async {
-    Future {Ok(views.html.index())}
-  }
+//  def index = Action.async {
+//    Future {Ok(views.html.index())}
+//  }
 
   def generate = Action.async(parse.json) { request =>
     val req = request.body.validate[Either[RequestError,VclRequest]]

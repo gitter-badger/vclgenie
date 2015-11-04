@@ -18,12 +18,12 @@ import play.api.Logger
 
 trait VCLHelpers {
 
-  var globalConfig: String = ""
-  var vclBackendRespStr: String = ""
-  var vclDeliverStr: String = ""
-  var vclRecvStr: String = ""
-  var vclErrorStr: String = ""
-  var vclHitStr: String = ""
+  case class VclOutput(globalConfig: String, vclBackendResp: String = "", vclDeliver: String = "", vclRecv: String = "",
+                       vclError: String = "", vclHit: String = "") {
+
+
+    def toOutput() = globalConfig + vclBackendResp + vclDeliver + vclRecv + vclError + vclHit
+  }
 
 
   //***************************************************************************
@@ -38,56 +38,76 @@ trait VCLHelpers {
     acc("",tabs)
   }
 
-  def addComment(tabs: Int, s: String) = {
-    globalConfig +=  "\n#----------------------------------------\n"
-    globalConfig += "#" + addTabs(1) + s + "\n"
-    globalConfig +=  "#----------------------------------------\n"
+  def addComment(tabs: Int, s: String)(config: VclOutput) = {
+      val comment = "\n#----------------------------------------\n" +
+      "#" + addTabs(1) + s + "\n" +
+      "#----------------------------------------\n"
+
+     config.copy(globalConfig = config.globalConfig + comment)
   }
 
-  def addToVcl(str: String, vclFunc: VclFunctionType) = vclFunc match {
-    case VclFunctionType.vclBackendResp => vclBackendRespStr += str
-    case VclFunctionType.vclRecv => vclRecvStr += str
-    case VclFunctionType.vclDeliver => vclDeliverStr += str
-    case VclFunctionType.vclError => vclErrorStr += str
-    case VclFunctionType.vclHit => vclHitStr += str
+  def addToVcl(str: String, vclFunc: VclFunctionType)(config: VclOutput): VclOutput = vclFunc match {
+    case VclFunctionType.vclBackendResp =>
+      config.copy(vclBackendResp = config.vclBackendResp + str)
+    case VclFunctionType.vclRecv =>
+      config.copy(vclRecv = config.vclRecv + str)
+    case VclFunctionType.vclDeliver =>
+      config.copy(vclDeliver = config.vclDeliver + str)
+    case VclFunctionType.vclError =>
+      config.copy(vclError = config.vclError + str)
+    case VclFunctionType.vclHit =>
+      config.copy(vclHit = config.vclHit + str)
   }
 
-  def generateAcl(rules: Seq[Rule]) = {
+  def generateAcl(rules: Seq[Rule])(config: VclOutput): VclOutput = {
 
     val pattern = "(\\d\\.\\d\\.\\d\\.\\d)/(\\d+)".r
 
-    rules.filter(_.needsAcl).foreach { rule =>
+    val configStr = rules.filter(_.needsAcl).map { rule =>
 
-      globalConfig += "acl acl_" + rule.id + "{ \n"
+
       val aclRules = rule.conditions.filter(f => f.condition == VclConfigCondition.clientIp )
 
-      aclRules.foreach { aclrule =>
+      "acl acl_" + rule.id + "{ \n" +
+      aclRules.map { aclrule =>
         val net = aclrule.value match {
           case x if x.contains("/") => x
           case x => x + "/32"
         }
         val pattern(ip,mask) = net
-        globalConfig += addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
-      }
-      globalConfig += "}\n\n"
-    }
+        addTabs(1) + "\"" + ip + "\"" + "/" +   mask + " ;\n"
+      }.mkString +
+      "}\n\n"
+
+    }.mkString
+
+    config.copy(globalConfig = config.globalConfig + configStr )
   }
 
 
-  def generateBackends(b: Seq[Backend]) = {
-      def generateBackend(backend: Backend) = {
-        globalConfig += "backend " + backend.name + " { \n"
-        globalConfig += addTabs(1) + ".host = \"" + backend.host + "\" ;\n"
-        globalConfig += addTabs(1) + ".host_header = \"" + backend.hostHeader + "\" ; \n"
-        globalConfig += addTabs(1) + ".port = \"" + backend.port + "\"; \n"
-        if (backend.probe.isDefined)
-          globalConfig += addTabs(1) + ".probe = healthcheck; \n\n"
-        globalConfig += "}\n\n"
-      }
+  def generateBackends(backends: Seq[Backend])(config: VclOutput): VclOutput = {
 
-     b.map(backend => generateBackend(backend))
+    def healthcheck(b: Backend) = {
+      if (b.probe.isDefined)
+        addTabs(1) + ".probe = healthcheck; \n\n"
+      else
+        ""
+    }
 
-     addToVcl("set req.backend_hint = " + b.head.name + ";", vclRecv)
+    def generateBackend(backends: Seq[Backend], cfg: String = ""): String = backends match {
+      case Nil =>  cfg
+      case backend :: tail =>
+        val backendStr = "backend " + backend.name + " { \n" +
+                         addTabs(1) + ".host = \"" + backend.host + "\" ;\n" +
+                         addTabs(1) + ".host_header = \"" + backend.hostHeader + "\" ; \n" +
+                         addTabs(1) + ".port = \"" + backend.port + "\"; \n" +
+                         healthcheck(backend) +
+                         "}\n\n"
+        generateBackend(tail,cfg + backendStr)
+    }
+
+    val cfg1 = addToVcl(addTabs(1) + "set req.backend_hint = " + backends.head.name + ";", vclRecv)(config)
+    cfg1.copy(globalConfig = cfg1.globalConfig + generateBackend(backends).mkString)
   }
 
   def toTTL(units: VclUnits) = units match {
@@ -209,43 +229,53 @@ trait VCLHelpers {
  //  HOSTNAME FUNCTIONS
  // ****************************************************
 
-  def generateHostConditions(hostnames: Seq[Hostname], ruleset: String) = {
+  def generateHostConditions(hostnames: Seq[Hostname], ruleset: String)(config: VclOutput) = {
+
+    def hostAcc(funcs: List[VclFunctionType], configAcc: VclOutput ): VclOutput = funcs match {
+      case Nil => configAcc
+      case h :: t =>
+        val reqClass = if (h == vclBackendResp) "bereq" else "req"
+        val cfg = "\n" +
+                  addTabs(1) + "if (" + hostnames.map( h => "(" + reqClass + ".http.Host == \"" + h.name + "\")").mkString("||") + ") {\n" +
+                  addTabs(2) + "call ruleset_" + ruleset + "_global_" + h + ";\n" +
+                  addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + h + ";\n" +
+                  addTabs(1) + "}\n"
+        hostAcc(t,addToVcl(cfg,h)(configAcc))
+    }
+
     val funcs = List(vclBackendResp, vclRecv, vclDeliver, vclHit)
 
-    funcs.foreach { vclfunc =>
-      var block = "\n"
-      if (vclfunc == vclBackendResp)
-        block +=  addTabs(1) + " if (" + hostnames.map( h => "(bereq.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
-      else
-        block +=  addTabs(1) + " if (" + hostnames.map( h => "(req.http.Host == \"" + h.name + "\")").mkString("||") + ") {\n"
-      block += addTabs(2) + "call ruleset_" + ruleset + "_global_" + vclfunc + ";\n"
-      block += addTabs(2) + "call ruleset_" + ruleset + "_ordered_" + vclfunc + ";\n"
-      block += addTabs(1) + " }\n"
-      addToVcl(block,vclfunc)
-    }
+    hostAcc(funcs,config)
   }
 
   //***************************************************
   //  GENERIC FUNCTIONS
   //***************************************************
 
+  def closevclRecv() = {
+    addTabs(1) + "else { return(synth(403)); } \n" +
+    addTabs(1) + " call cleanup_request_headers;\n" +
+    "}\n"
+  }
 
+  def closevclBackendResp() = {
+    "}\n"
+  }
 
-  def closeConfigs = {
-    vclBackendRespStr += "}\n"
-    globalConfig += vclBackendRespStr
+  def closevclDeliver() = {
+    addTabs(1) + "call cleanup_response_headers; \n" +
+    "}\n"
+  }
 
-    vclRecvStr += addTabs(1) + "else { return(synth(403)); } \n"
-    vclRecvStr += addTabs(1) + " call cleanup_request_headers;\n"
-    vclRecvStr += "}\n"
-    globalConfig += vclRecvStr
+  def closevclHit() = {
+    "}\n"
+  }
 
-    vclDeliverStr += addTabs(1) + "call cleanup_response_headers; \n"
-    vclDeliverStr += "}\n"
-    globalConfig += vclDeliverStr
-
-    globalConfig += vclErrorStr
-
+  def closeConfigs(config: VclOutput): VclOutput = {
+    config.copy(vclBackendResp = config.vclBackendResp + closevclBackendResp(),
+                vclRecv = config.vclRecv + closevclRecv(),
+                vclDeliver = config.vclDeliver + closevclDeliver(),
+                vclHit = config.vclHit + closevclHit())
   }
 
   val baseVcl = """
@@ -272,7 +302,7 @@ trait VCLHelpers {
                   |"""
     .stripMargin
 
-  vclDeliverStr =
+ val  vclDeliverStr =
     """
       |#------------------------
       |# VCL_DELIVER
@@ -287,7 +317,7 @@ trait VCLHelpers {
       |
     """.stripMargin
 
-  vclBackendRespStr =
+ val  vclBackendRespStr =
     """
       |#------------------------
       |# VCL_BACKEND_RESPONSE
@@ -295,7 +325,7 @@ trait VCLHelpers {
       |sub vcl_backend_response {
     """.stripMargin
 
-  vclRecvStr =
+ val  vclRecvStr =
     """
       |#------------------------
       |# VCL_RECV
@@ -308,7 +338,7 @@ trait VCLHelpers {
       |
     """.stripMargin
 
-  vclHitStr =
+ val  vclHitStr =
      """
        |#--------------------------
        |# VCL_HIT
@@ -317,7 +347,7 @@ trait VCLHelpers {
        |
      """.stripMargin
 
-  vclErrorStr =
+ val  vclErrorStr =
     """
       |#------------------------
       |# VCL_ERROR
