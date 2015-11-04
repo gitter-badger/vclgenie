@@ -22,11 +22,11 @@ trait VCLHelpers {
                        vclError: String = "", vclHit: String = "")
 
   var globalConfig: String = ""
-  var vclBackendRespStr: String = ""
-  var vclDeliverStr: String = ""
-  var vclRecvStr: String = ""
-  var vclErrorStr: String = ""
-  var vclHitStr: String = ""
+//  var vclBackendRespStr: String = ""
+//  var vclDeliverStr: String = ""
+//  var vclRecvStr: String = ""
+//  var vclErrorStr: String = ""
+//  var vclHitStr: String = ""
 
 
   //***************************************************************************
@@ -252,27 +252,25 @@ trait VCLHelpers {
   //  GENERIC FUNCTIONS
   //***************************************************
 
+  def closevclRecv() = {
+    addTabs(1) + "else { return(synth(403)); } \n" +
+    addTabs(1) + " call cleanup_request_headers;\n" +
+    "}\n"
+  }
 
+  def closevclBackendResp() = {
+    "}\n"
+  }
+
+  def closevclDeliver() = {
+    addTabs(1) + "call cleanup_response_headers; \n" +
+    "}\n"
+  }
 
   def closeConfigs(config: VclOutput): VclOutput = {
-    vclBackendRespStr += "}\n"
-    globalConfig += vclBackendRespStr
-
-    vclRecvStr += addTabs(1) + "else { return(synth(403)); } \n"
-    vclRecvStr += addTabs(1) + " call cleanup_request_headers;\n"
-    vclRecvStr += "}\n"
-    globalConfig += vclRecvStr
-
-    vclDeliverStr += addTabs(1) + "call cleanup_response_headers; \n"
-    vclDeliverStr += "}\n"
-    globalConfig += vclDeliverStr
-
-    globalConfig += vclErrorStr
-
-    config.copy(globalConfig = config.globalConfig + vclBackendRespStr,
-                vclBackendResp = config.vclBackendResp + vclBackendRespStr,
-                vclRecv = config.vclRecv + vclRecvStr,
-                vclDeliver = config.vclDeliver + vclDeliverStr)
+    config.copy(vclBackendResp = config.vclBackendResp + closevclBackendResp(),
+                vclRecv = config.vclRecv + closevclRecv(),
+                vclDeliver = config.vclDeliver + closevclDeliver())
   }
 
   val baseVcl = """
@@ -299,7 +297,7 @@ trait VCLHelpers {
                   |"""
     .stripMargin
 
-  vclDeliverStr =
+ val  vclDeliverStr =
     """
       |#------------------------
       |# VCL_DELIVER
@@ -314,7 +312,7 @@ trait VCLHelpers {
       |
     """.stripMargin
 
-  vclBackendRespStr =
+ val  vclBackendRespStr =
     """
       |#------------------------
       |# VCL_BACKEND_RESPONSE
@@ -322,7 +320,7 @@ trait VCLHelpers {
       |sub vcl_backend_response {
     """.stripMargin
 
-  vclRecvStr =
+ val  vclRecvStr =
     """
       |#------------------------
       |# VCL_RECV
@@ -335,7 +333,7 @@ trait VCLHelpers {
       |
     """.stripMargin
 
-  vclHitStr =
+ val  vclHitStr =
      """
        |#--------------------------
        |# VCL_HIT
@@ -344,7 +342,7 @@ trait VCLHelpers {
        |
      """.stripMargin
 
-  vclErrorStr =
+ val  vclErrorStr =
     """
       |#------------------------
       |# VCL_ERROR

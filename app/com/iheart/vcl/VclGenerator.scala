@@ -73,7 +73,7 @@ class VclGenerator extends VCLHelpers {
   def generateOrderedRules(ruleset: String, rules: Seq[Rule])(config: VclOutput) = {
     val funcs: Seq[VclFunctionType] =
       rules.flatMap(r => r.actions.map(a => a.action.validVclFunctions)).flatten intersect
-       rules.flatMap(r => r.conditions.map(c => c.condition.validVclFunctions)).flatten
+       rules.flatMap(r => r.conditions.map(c => c.condition.validVclFunctions)).flatten.distinct
 
     val res = funcs.map { vclfunc =>
       "sub ruleset_" + ruleset + "_ordered_" + vclfunc + " { \n" +
@@ -92,7 +92,13 @@ class VclGenerator extends VCLHelpers {
                       backends: Seq[Backend],
                       ruleset: String = generateUUID): String = {
 
-    val config = VclOutput(globalConfig = baseVcl)
+    val baseConfig = VclOutput(globalConfig = baseVcl,
+                           vclBackendResp = vclBackendRespStr,
+                           vclDeliver = vclDeliverStr,
+                           vclRecv = vclRecvStr,
+                           vclError = vclErrorStr,
+                           vclHit = vclHitStr
+                           )
 
     val pipeline = Seq(generateAcl(orderedRules ++ globalRules) _,
                        generateBackends(backends) _ ,
@@ -105,7 +111,8 @@ class VclGenerator extends VCLHelpers {
     )
 
     val f = Function.chain(pipeline)
-    f(config).globalConfig
+    val config = f(baseConfig)
+    config.globalConfig + config.vclBackendResp + config.vclDeliver + config.vclError + config.vclHit + config.vclRecv
   }
 
 
