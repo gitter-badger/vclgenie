@@ -75,6 +75,16 @@ class VclGenerator extends VCLHelpers {
       rules.flatMap(r => r.actions.map(a => a.action.validVclFunctions)).flatten intersect
        rules.flatMap(r => r.conditions.map(c => c.condition.validVclFunctions)).flatten.distinct
 
+    val emptyFuncs: Seq[VclFunctionType] =
+      (rules.flatMap(r => r.actions.map(a => a.action.validVclFunctions)).flatten union
+        rules.flatMap(r => r.conditions.map(c => c.condition.validVclFunctions)).flatten).distinct diff
+      funcs
+
+
+    val empty = emptyFuncs.map { vclfunc =>
+      "sub ruleset_" + ruleset + "_ordered_" + vclfunc + " { } \n\n"
+    }.mkString
+
     val res = funcs.map { vclfunc =>
       "sub ruleset_" + ruleset + "_ordered_" + vclfunc + " { \n" +
       rules.filter(_.actionHasVclFunction(vclfunc)).sortBy(_.index).zipWithIndex.map { case (rule,idx) =>
@@ -83,7 +93,7 @@ class VclGenerator extends VCLHelpers {
       "}\n\n"  //End sub for this VCL Function
     }.mkString
 
-    config.copy(globalConfig = config.globalConfig + res)
+    config.copy(globalConfig = config.globalConfig + empty + res)
   }
 
   def generateRuleset(hostnames: Seq[Hostname],

@@ -10,7 +10,7 @@ case class VclAction(key: String, label: String, actionType: VclActionType,
 object VclConfigAction {
 
   val doNotCache = VclAction("do_not_cache","Do Not Cache", Bool,Seq(vclBackendResp, vclHit))
-  val setTTL = VclAction("set_ttl","Cache For", Units, Seq(vclBackendResp,vclHit) )
+  val setTTL = VclAction("set_ttl","Cache For", Units, Seq(vclBackendResp) )
   val httpRedirect = VclAction("http_redirect","HTTP Redirect to", SingleAction,  Seq(vclRecv,vclBackendResp,vclDeliver))
   val addCookie = VclAction("add_cookie","Add Cookie", NameValAction, Seq(vclDeliver) )
   val remCookies = VclAction("remove_cookie","Remove Cookies", Bool, Seq(vclRecv, vclBackendResp) )
