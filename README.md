@@ -1,5 +1,7 @@
 # VCLGenie
 
+[![Join the chat at https://gitter.im/iheartradio/vclgenie](https://badges.gitter.im/iheartradio/vclgenie.svg)](https://gitter.im/iheartradio/vclgenie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 VclGenie is an API (with an angular frontend located in frontend/) to essentially turn a JSON API request into Varnish VCL.  The API accepts 4 parameters, defined more below.
 
 To see VCLGenie in action, check out the demo site at [http://www.vclgenie.com](http://www.vclgenie.com)
